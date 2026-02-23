@@ -6,6 +6,8 @@ export const metadata: Metadata = {
     description: 'Your next-generation chess playing experience.',
 };
 
+import Providers from './providers';
+
 export default function RootLayout({
     children,
 }: Readonly<{
@@ -13,7 +15,9 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en">
-            <body className="bg-zinc-950 text-zinc-50 antialiased">{children}</body>
+            <body className="bg-zinc-950 text-zinc-50 antialiased">
+                <Providers>{children}</Providers>
+            </body>
         </html>
     );
 }
