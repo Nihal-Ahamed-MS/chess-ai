@@ -3,61 +3,23 @@
 
 import { Chess } from "chess.js";
 import { useParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { Chessboard } from "react-chessboard";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import stockfishService from "@/service/stockfish.service";
+import ChessBoard from "@/components/chessboard";
+import { Spinner } from "@/components/ui/spinner";
+import { UCI_COMMANDS } from "@/lib/constants";
 
 const Arena = () => {
     const params = useParams();
-    const engineRef = useRef<any>(null);
-
-    // Configured options based on the requested ChessboardOptions type
-    const chessboardOptions = {
-        id: "arena-board",
-        boardOrientation: "white" as const,
-        chessboardRows: 8,
-        chessboardColumns: 8,
-        boardStyle: {},
-        squareStyle: {},
-        squareStyles: {},
-        darkSquareStyle: { backgroundColor: "#B58863" },
-        lightSquareStyle: { backgroundColor: "#F0D9B5" },
-        dropSquareStyle: { boxShadow: "inset 0 0 1px 4px rgba(255, 255, 0, 0.5)" },
-        draggingPieceStyle: {},
-        draggingPieceGhostStyle: { opacity: 0.5 },
-        darkSquareNotationStyle: { color: "#F0D9B5" },
-        lightSquareNotationStyle: { color: "#B58863" },
-        alphaNotationStyle: {},
-        numericNotationStyle: {},
-        showNotation: true,
-        animationDurationInMs: 300,
-        showAnimations: true,
-        allowDragging: true,
-        allowDragOffBoard: false,
-        allowAutoScroll: true,
-        dragActivationDistance: 0,
-        allowDrawingArrows: true,
-        arrows: [],
-        clearArrowsOnClick: true,
-        clearArrowsOnPositionChange: false,
-
-        // Handlers
-        canDragPiece: ({ isSparePiece, piece, square }: any) => true,
-        onArrowsChange: ({ arrows }: any) => { },
-        onMouseOutSquare: ({ piece, square }: any) => { },
-        onMouseOverSquare: ({ piece, square }: any) => { },
-        onPieceClick: ({ isSparePiece, piece, square }: any) => { },
-        onPieceDrag: ({ isSparePiece, piece, square }: any) => { },
-        onSquareClick: ({ piece, square }: any) => { },
-        onSquareMouseDown: ({ piece, square }: any, e: any) => { },
-        onSquareMouseUp: ({ piece, square }: any, e: any) => { },
-        onSquareRightClick: ({ piece, square }: any) => { },
-    };
-
+    const [loader, setLoader] = useState(true);
     const [game, setGame] = useState(new Chess());
+    const gameRef = useRef(game);
 
-    function onDrop({ piece, sourceSquare, targetSquare }: any) {
-        console.log(sourceSquare, targetSquare);
-        const move = game.move({
+    const onDrop = useCallback(({ piece, sourceSquare, targetSquare }: any) => {
+        const currentGame = gameRef.current;
+
+        const move = currentGame.move({
             from: sourceSquare,
             to: targetSquare,
             promotion: "q",
@@ -65,37 +27,64 @@ const Arena = () => {
 
         if (move === null) return false;
 
-        setGame(new Chess(game.fen()));
+        const updatedGame = new Chess(currentGame.fen());
+        setGame(updatedGame);
+
+        stockfishService.evaluatePosition(updatedGame.fen(), 15);
         return true;
+    }, []);
+
+    const initializeStockfish = () => {
+        stockfishService.init().then(() => {
+            setLoader(false);
+            stockfishService.newGame();
+        }).catch((err) => {
+            console.error(err);
+            setLoader(false);
+        });
     }
 
     useEffect(() => {
-        const stockfish = require("stockfish");
-        const engine = stockfish();
+        initializeStockfish();
 
-        engineRef.current = engine;
+        const unsubscribe = stockfishService.onMessage((message: string) => {
+            console.info("Stockfish:", message);
 
-        engine.postMessage("uci");
-        engine.postMessage("isready");
+            if (message.startsWith(UCI_COMMANDS.BESTMOVE)) {
+                const bestMove = message.split(" ")[1];
+                if (!bestMove || bestMove === "(none)") return;
 
-        engine.onmessage = (event: any) => {
-            console.log("Engine:", event);
+                const currentGame = gameRef.current;
+
+                const move = currentGame.move({
+                    from: bestMove.substring(0, 2),
+                    to: bestMove.substring(2, 4),
+                    promotion: bestMove.length > 4 ? bestMove.substring(4) : undefined,
+                });
+
+                if (move === null) return;
+
+                console.log("Stockfish played:", bestMove);
+                setGame(new Chess(currentGame.fen()));
+            }
+        });
+
+        return () => {
+            unsubscribe();
+            stockfishService.destroy();
         };
-
-        engine.postMessage("position startpos");
-        engine.postMessage("go depth 15");
-
-        return () => engine.terminate();
     }, []);
 
-    return (
-        <div>
-            <h1>Arena {params.slug}</h1>
+    if (loader) return (
+        <div className="w-screen h-screen flex justify-center items-center">
+            <Spinner />
+        </div>
+    );
 
+    return (
+        <div className="w-screen h-screen flex justify-center items-center">
             <div style={{ width: "500px", height: "500px" }}>
-                <Chessboard
-                    options={{ ...chessboardOptions, position: game.fen(), onPieceDrop: onDrop, arrows: [] }}
-                />
+                <ChessBoard options={{ position: game.fen(), onPieceDrop: onDrop }} />
             </div>
         </div>
     );
