@@ -7,7 +7,7 @@ import { encrypt } from "@/lib/helper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { USER_SIGN_IN } from "@/service/auth.service";
+import { USER_SIGN_IN } from "@/service/ui/auth.service";
 import { useMutation } from "@tanstack/react-query";
 
 export default function LoginPage() {

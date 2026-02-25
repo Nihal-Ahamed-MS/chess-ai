@@ -1,3 +1,5 @@
+import { BLACK, WHITE } from "chess.js";
+
 export const NODE_ENV = {
     DEVELOPMENT: 'development',
     PRODUCTION: 'production',
@@ -28,3 +30,13 @@ export const UCI_COMMANDS = {
     NULLMOVE: "nullmove",
     BESTMOVE: "bestmove"
 }
+
+export const MESSAGE_TYPE = {
+    USER: "user",
+    MODEL: "model",
+} as const;
+
+export const CHESS_PIECES_COLOR = {
+    WHITE: WHITE,
+    BLACK: BLACK,
+} as const;   

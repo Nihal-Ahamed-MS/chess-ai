@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useMutation } from "@tanstack/react-query";
 import { Spinner } from "@/components/ui/spinner";
-import { USER_SIGN_UP } from "@/service/auth.service";
+import { USER_SIGN_UP } from "@/service/ui/auth.service";
 
 export default function RegisterPage() {
     const router = useRouter();

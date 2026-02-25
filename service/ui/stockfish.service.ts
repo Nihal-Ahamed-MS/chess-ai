@@ -2,13 +2,22 @@ import { UCI_COMMANDS } from "@/lib/constants";
 
 type MessageListener = (message: string) => void;
 
+export interface EvalInfo {
+    depth: number;
+    score: { type: "cp" | "mate"; value: number } | null;
+    pv: string;
+    bestMove: string | null;
+}
+
 const STOCKFISH_SCRIPT_PATH = "/stockfish/stockfish-18-lite-single.js";
 
 class StockfishService {
     private worker: Worker | null = null;
     private listeners: MessageListener[] = [];
+    private evalListeners: ((info: EvalInfo) => void)[] = [];
     private isReady = false;
     private commandQueue: string[] = [];
+    private latestEval: EvalInfo = { depth: 0, score: null, pv: "", bestMove: null };
 
     /**
      * Initialize the Stockfish engine inside a Web Worker.
@@ -33,6 +42,9 @@ class StockfishService {
 
                     // Notify all registered listeners
                     this.listeners.forEach((listener) => listener(message));
+
+                    // Parse evaluation-specific messages
+                    this.parseEvalMessage(message);
 
                     // Detect when engine is ready
                     if (message === UCI_COMMANDS.UCI_OK) {
@@ -82,6 +94,48 @@ class StockfishService {
         return () => {
             this.listeners = this.listeners.filter((l) => l !== listener);
         };
+    }
+
+    /**
+     * Register a listener only for evaluation messages (info lines with score + bestmove).
+     * The callback receives a parsed EvalInfo object.
+     * Returns an unsubscribe function.
+     */
+    onEvaluation(listener: (info: EvalInfo) => void): () => void {
+        this.evalListeners.push(listener);
+        return () => {
+            this.evalListeners = this.evalListeners.filter((l) => l !== listener);
+        };
+    }
+
+    /**
+     * Parse engine output and fire eval listeners for info/bestmove lines.
+     */
+    private parseEvalMessage(message: string): void {
+        if (message.startsWith("info") && message.includes("score")) {
+            const depthMatch = message.match(/\bdepth (\d+)/);
+            const cpMatch = message.match(/\bscore cp (-?\d+)/);
+            const mateMatch = message.match(/\bscore mate (-?\d+)/);
+            const pvMatch = message.match(/\bpv (.+)$/);
+
+            this.latestEval = {
+                depth: depthMatch ? parseInt(depthMatch[1]) : 0,
+                score: cpMatch
+                    ? { type: "cp", value: parseInt(cpMatch[1]) }
+                    : mateMatch
+                        ? { type: "mate", value: parseInt(mateMatch[1]) }
+                        : null,
+                pv: pvMatch ? pvMatch[1] : "",
+                bestMove: null,
+            };
+
+            this.evalListeners.forEach((l) => l({ ...this.latestEval }));
+        } else if (message.startsWith(UCI_COMMANDS.BESTMOVE)) {
+            const bestMove = message.split(" ")[1] || null;
+
+            this.latestEval = { ...this.latestEval, bestMove };
+            this.evalListeners.forEach((l) => l({ ...this.latestEval }));
+        }
     }
 
     /**
@@ -135,7 +189,9 @@ class StockfishService {
             this.worker = null;
             this.isReady = false;
             this.listeners = [];
+            this.evalListeners = [];
             this.commandQueue = [];
+            this.latestEval = { depth: 0, score: null, pv: "", bestMove: null };
         }
     }
 }
