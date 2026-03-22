@@ -1,0 +1,47 @@
+"use client";
+import { createContext, useContext, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { VALIDATE_USER_SESSION } from "@/service/ui/auth.service";
+import { getCookie } from "@/lib/helper";
+
+// @ts-ignore
+const AuthContext = createContext<any>(null);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+    const [user, setUser] = useState(null);
+    const [isSessionValid, setIsSessionValid] = useState(false);
+    const { isLoading: authLoading } = useQuery({
+        queryKey: ["authUser"],
+        queryFn: async () => {
+            const token = getCookie("token");
+            if (!token) {
+                setUser(null);
+                setIsSessionValid(false);
+                return null;
+            }
+
+            try {
+                const response = await VALIDATE_USER_SESSION({ token });
+                const fetchedUser = response?.user ?? response ?? null;
+                setUser(fetchedUser);
+                setIsSessionValid(true);
+                return fetchedUser;
+            } catch (error) {
+                console.error("Session validation failed:", error);
+                setUser(null);
+                setIsSessionValid(false);
+                return null;
+            }
+        },
+        retry: false,
+        refetchOnWindowFocus: false,
+    });
+
+    return (
+        <AuthContext.Provider value={{ user, authLoading, setUser, isSessionValid }}>
+            {children}
+        </AuthContext.Provider>
+    );
+}
+
+export const useAuth = () => useContext(AuthContext);

@@ -9,3 +9,8 @@ export const USER_SIGN_IN = async (payload: any) => {
     const { data } = await axios.post("/api/v1/auth/login", payload);
     return data;
 }
+
+export const VALIDATE_USER_SESSION = async (payload: any) => {
+    const { data } = await axios.post("/api/v1/auth/verify-session", payload);
+    return data;
+}

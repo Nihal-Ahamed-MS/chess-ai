@@ -32,7 +32,6 @@ export default function LoginPage() {
         }
     });
 
-
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };

@@ -61,3 +61,16 @@ export function encrypt(data: string): string {
         return data;
     }
 }
+
+export const getCookie = (name: String) => {
+    try {
+        const value = `; ${document.cookie}`;
+        const parts = value?.split(`; ${name}=`) || [];
+
+        if (parts && parts.length === 2) return parts.pop()?.split(';').shift();
+        return null;
+    } catch (error) {
+        console.error(error)
+        return null;
+    }
+}

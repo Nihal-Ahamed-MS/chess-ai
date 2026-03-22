@@ -1,4 +1,3 @@
-"use client";
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Bot, Swords, BrainCircuit, Sparkles, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
