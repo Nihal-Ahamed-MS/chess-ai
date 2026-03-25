@@ -1,152 +1,117 @@
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Bot, Swords, BrainCircuit, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Bot, Swords, BrainCircuit, Sparkles, ChevronRight, Activity } from 'lucide-react';
 import Link from 'next/link';
 import Navbar from '@/components/navbar';
-import './index.css';
 
 export default function Home() {
     return (
-        <div className="relative min-h-screen bg-zinc-950 text-zinc-50 selection:bg-emerald-500/30">
-            {/* Background Gradients & Effects */}
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
-                <div className="absolute top-[-20%] left-[-10%] h-[40rem] w-[40rem] rounded-full bg-emerald-500/10 blur-[120px]" />
-                <div className="absolute bottom-[-20%] right-[-10%] h-[40rem] w-[40rem] rounded-full bg-cyan-500/10 blur-[120px]" />
-            </div>
-
+        <div className="relative min-h-screen bg-[#0a0a0a] text-zinc-50 font-sans selection:bg-indigo-500/30 selection:text-white pb-24">
             <Navbar />
 
-            <main className="relative z-10 flex flex-col items-center pb-20 pt-32 sm:pt-40">
-                {/* Hero Section */}
-                <section className="container mx-auto px-6 text-center">
-                    <div className="mx-auto flex max-w-fit items-center justify-center space-x-2 overflow-hidden rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 backdrop-blur-sm transition-all hover:bg-emerald-500/20">
-                        <Sparkles className="h-4 w-4 text-emerald-400" />
-                        <span className="text-sm font-medium text-emerald-300">The Next-Generation Chess Experience</span>
+            {/* Futuristic Tech Ambient Glows */}
+            <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+                <div className="absolute top-[-20%] right-[-10%] h-[50rem] w-[50rem] rounded-full bg-indigo-500/10 blur-[120px]" />
+                <div className="absolute top-[40%] left-[-10%] h-[40rem] w-[40rem] rounded-full bg-cyan-500/10 blur-[100px]" />
+                <div className="absolute inset-0 bg-[url('https://res.cloudinary.com/djpdb839k/image/upload/v1707018318/grid-noise-dark-subtle.png')] opacity-[0.03] mix-blend-overlay" />
+            </div>
+
+            <main className="relative z-10 flex flex-col items-center px-6 pt-32 sm:pt-48 pb-20">
+                {/* Tech Hero Section */}
+                <section className="flex flex-col items-center text-center max-w-5xl mx-auto">
+                    {/* Badge */}
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/5 bg-white/5 py-1.5 px-3 backdrop-blur-md mb-8 shadow-sm">
+                        <Activity className="h-4 w-4 text-indigo-400" />
+                        <span className="text-xs font-medium text-zinc-300">Chess AI Engine v2.0 Live</span>
+                        <div className="h-4 w-px bg-white/10 mx-1" />
+                        <Link href="/log" className="flex items-center gap-1 text-xs font-semibold text-indigo-400 hover:text-indigo-300">
+                            Read Changelog <ChevronRight className="h-3 w-3" />
+                        </Link>
                     </div>
 
-                    <h1 className="mx-auto mt-8 max-w-4xl text-5xl font-extrabold tracking-tight sm:text-7xl">
-                        Master the game with <br className="hidden sm:block" />
-                        <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent animate-gradient-x">AI Intelligence</span>
+                    <h1 className="text-5xl sm:text-7xl lg:text-8xl font-medium tracking-tighter leading-[1.05] text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-500 mb-6 drop-shadow-sm">
+                        Intelligence applied <br className="hidden sm:block" />
+                        to the ultimate game.
                     </h1>
 
-                    <p className="mx-auto mt-6 max-w-2xl text-lg text-zinc-400 sm:text-xl leading-relaxed">
-                        Play against opponents worldwide and analyze every move with advanced LLMs. Or challenge Stockfish with a generative AI coach by your side.
+                    <p className="max-w-2xl text-lg sm:text-xl font-normal text-zinc-400 leading-relaxed mb-10">
+                        Compete on a global scale. Train against advanced heuristic engines. Demystify complex positions with integrated Large Language Models.
                     </p>
 
-                    <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                        <Link href="/arena">
-                            <Button size="lg" className="h-14 bg-emerald-500 px-8 text-base font-semibold text-white shadow-[0_0_40px_-10px_rgba(16,185,129,0.5)] transition-all hover:bg-emerald-400 hover:shadow-[0_0_60px_-15px_rgba(16,185,129,0.7)] hover:-translate-y-0.5 group">
-                                Play Multiplayer
-                                <Swords className="ml-2 h-5 w-5 transition-transform group-hover:scale-110" />
+                    <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+                        <Link href="/arena" className="w-full sm:w-auto">
+                            <Button size="lg" className="h-12 w-full sm:w-auto rounded-full bg-white px-8 text-sm font-semibold text-zinc-950 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] transition-all hover:bg-zinc-200 hover:scale-105 active:scale-95">
+                                Start Playing
                             </Button>
                         </Link>
-                        <Link href="/vs-computer">
-                            <Button size="lg" variant="outline" className="h-14 border-zinc-700 bg-zinc-900/50 px-8 text-base font-semibold text-zinc-200 backdrop-blur transition-all hover:bg-zinc-800 hover:text-white hover:-translate-y-0.5 group">
-                                Play Computer
-                                <Bot className="ml-2 h-5 w-5 transition-transform group-hover:scale-110" />
+                        <Link href="/vs-computer" className="w-full sm:w-auto">
+                            <Button size="lg" variant="outline" className="h-12 w-full sm:w-auto rounded-full border-white/10 bg-white/5 px-8 text-sm font-medium text-zinc-300 transition-all hover:bg-white/10 hover:text-white backdrop-blur-sm">
+                                Explore AI Features
                             </Button>
                         </Link>
                     </div>
+                </section>
 
-                    <div className="mt-10 flex items-center justify-center gap-6 text-sm font-medium text-zinc-500 sm:mt-12">
-                        <div className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-500" /> PvP Matches
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-500" /> LLM Analysis
-                        </div>
-                        <div className="flex items-center gap-2 hidden sm:flex">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-500" /> AI Coach
+                {/* Dashboard / UI Mockup Hint */}
+                <section className="mt-32 w-full max-w-6xl relative animate-in fade-in slide-in-from-bottom-10 duration-1000">
+                    <div className="absolute -inset-1 rounded-[2.5rem] bg-gradient-to-b from-indigo-500/20 to-transparent blur-xl opacity-50" />
+                    <div className="relative aspect-[16/9] w-full rounded-[2rem] border border-white/10 bg-[#050505]/80 backdrop-blur-2xl shadow-2xl overflow-hidden flex items-center justify-center p-8">
+                        {/* Abstract Tech Graphic inside the mockup */}
+                        <div className="w-full h-full border border-white/5 rounded-2xl bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] flex items-center justify-center relative shadow-inner">
+                            <div className="absolute h-full w-full bg-[radial-gradient(circle_500px_at_50%_50%,#00000000,var(--tw-gradient-stops))] from-transparent via-[#050505]/40 to-[#050505]" />
+                            <div className="h-24 w-24 rounded-full border border-indigo-500/30 bg-indigo-500/10 backdrop-blur-md flex items-center justify-center relative shadow-[0_0_80px_rgba(99,102,241,0.2)]">
+                                <Sparkles className="h-8 w-8 text-indigo-400 animate-pulse" />
+                                <div className="absolute w-[300px] h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent rotate-45" />
+                                <div className="absolute w-[300px] h-[1px] bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent -rotate-45" />
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                {/* Features Highlights Section */}
-                <section className="container mx-auto mt-32 px-6">
-                    <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                        {/* Feature 1 */}
-                        <div className="group relative overflow-hidden rounded-3xl border border-white/5 bg-zinc-900/40 p-8 pt-12 backdrop-blur-sm transition-all hover:bg-zinc-900/80 hover:border-white/10 hover:shadow-2xl hover:shadow-emerald-500/5">
-                            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-emerald-500/10 blur-xl transition-all group-hover:bg-emerald-500/20" />
-                            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20">
-                                <Swords className="h-6 w-6" />
+                {/* Feature Infrastructure Grid */}
+                <section className="w-full max-w-6xl mt-32 grid gap-6 sm:grid-cols-3">
+                    {/* Feature 1 */}
+                    <div className="group relative flex flex-col justify-between rounded-[2rem] border border-white/5 bg-white/[0.02] p-8 transition-all hover:border-white/10 hover:bg-white/[0.04] overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="relative z-10">
+                            <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-zinc-300 shadow-inner">
+                                <Swords className="h-5 w-5" />
                             </div>
-                            <h3 className="mb-3 text-2xl font-bold text-white">Player vs Player</h3>
-                            <p className="text-zinc-400 leading-relaxed">
-                                Challenge players globally in real-time matches. Every game is tracked and recorded for deep post-match analysis.
-                            </p>
-                        </div>
-
-                        {/* Feature 2 */}
-                        <div className="group relative overflow-hidden rounded-3xl border border-white/5 bg-zinc-900/40 p-8 pt-12 backdrop-blur-sm transition-all hover:bg-zinc-900/80 hover:border-white/10 hover:shadow-2xl hover:shadow-cyan-500/5">
-                            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-cyan-500/10 blur-xl transition-all group-hover:bg-cyan-500/20" />
-                            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 ring-1 ring-cyan-500/20">
-                                <BrainCircuit className="h-6 w-6" />
-                            </div>
-                            <h3 className="mb-3 text-2xl font-bold text-white">Post-Game LLM Review</h3>
-                            <p className="text-zinc-400 leading-relaxed">
-                                Don't just see the best move—understand why. Our integrated LLM explains critical moments and blunders in plain language.
-                            </p>
-                        </div>
-
-                        {/* Feature 3 */}
-                        <div className="group relative overflow-hidden rounded-3xl border border-white/5 bg-zinc-900/40 p-8 pt-12 backdrop-blur-sm transition-all hover:bg-zinc-900/80 hover:border-white/10 hover:shadow-2xl hover:shadow-purple-500/5 sm:col-span-2 lg:col-span-1">
-                            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-purple-500/10 blur-xl transition-all group-hover:bg-purple-500/20" />
-                            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400 ring-1 ring-purple-500/20">
-                                <Bot className="h-6 w-6" />
-                            </div>
-                            <h3 className="mb-3 text-2xl font-bold text-white">AI-Assisted Stockfish</h3>
-                            <p className="text-zinc-400 leading-relaxed">
-                                Spar against Stockfish while a personalized AI coach offers hints, warns of threats, and suggests plans in real-time.
+                            <h3 className="mb-2 text-xl font-medium tracking-tight text-white">Global Multiplayer</h3>
+                            <p className="text-sm font-normal text-zinc-400 leading-relaxed">
+                                Low latency matchmaking. ELO rankings updated instantly via WebSockets for real-time play synchronization.
                             </p>
                         </div>
                     </div>
-                </section>
 
-                {/* Secondary CTA / Decorative Section */}
-                <section className="container mx-auto mt-32 px-6">
-                    <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-zinc-900/50 p-8 sm:p-12 lg:p-20 shadow-2xl backdrop-blur-md">
-                        <div className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80" aria-hidden="true">
-                            <div className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-emerald-500 to-cyan-400 opacity-20 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]" />
+                    {/* Feature 2 */}
+                    <div className="group relative flex flex-col justify-between rounded-[2rem] border border-white/5 bg-white/[0.02] p-8 transition-all hover:border-white/10 hover:bg-white/[0.04] overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="relative z-10">
+                            <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-zinc-300 shadow-inner">
+                                <BrainCircuit className="h-5 w-5" />
+                            </div>
+                            <h3 className="mb-2 text-xl font-medium tracking-tight text-white">Generative Game Review</h3>
+                            <p className="text-sm font-normal text-zinc-400 leading-relaxed">
+                                Don't just rely on centipawn loss numbers. Advanced LLMs evaluate your blunders and deliver highly contextual narrative post-mortems.
+                            </p>
                         </div>
+                    </div>
 
-                        <div className="grid items-center gap-12 lg:grid-cols-2">
-                            <div>
-                                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-white">
-                                    Elevate your game with <span className="text-emerald-400">Contextual Advice</span>
-                                </h2>
-                                <p className="mt-6 text-lg/8 text-zinc-300">
-                                    Whether you are a beginner learning the ropes or a grandmaster refining your repertoire, Chess AI provides the perfect combination of human intuition and unparalleled machine precision.
-                                </p>
-                                <div className="mt-8 flex gap-4 auto-rows-auto">
-                                    <Link href="/arena" className="inline-flex items-center text-emerald-400 font-semibold hover:text-emerald-300 transition-colors group">
-                                        Start playing now <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                                    </Link>
-                                </div>
+                    {/* Feature 3 */}
+                    <div className="group relative flex flex-col justify-between rounded-[2rem] border border-white/5 bg-white/[0.02] p-8 transition-all hover:border-white/10 hover:bg-white/[0.04] overflow-hidden sm:col-span-3 lg:col-span-1">
+                        <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="relative z-10">
+                            <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-zinc-300 shadow-inner">
+                                <Bot className="h-5 w-5" />
                             </div>
-
-                            {/* Decorative Glassmorphism Grid representing a chess setup/AI concept */}
-                            <div className="mx-auto w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950/80 p-2 shadow-2xl backdrop-blur-xl lg:mx-0 lg:max-w-none">
-                                <div className="grid grid-cols-4 grid-rows-4 gap-1.5 opacity-90">
-                                    {Array.from({ length: 16 }).map((_, i) => (
-                                        <div
-                                            key={i}
-                                            className={`aspect-square rounded-lg ${((Math.floor(i / 4) + i % 4) % 2 === 0) ? 'bg-zinc-800/80 shadow-inner' : 'bg-zinc-900/80'} flex items-center justify-center transition-all hover:bg-zinc-700`}
-                                        >
-                                            {i === 5 && <div className="h-6 w-6 rounded-full bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.8)] animate-pulse" />}
-                                            {i === 10 && <Bot className="h-7 w-7 text-cyan-400 opacity-80" />}
-                                            {i === 15 && <Sparkles className="h-5 w-5 text-purple-400 opacity-60" />}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                            <h3 className="mb-2 text-xl font-medium tracking-tight text-white">Engine Partnership</h3>
+                            <p className="text-sm font-normal text-zinc-400 leading-relaxed">
+                                Integrated Stockfish 18 execution within the browser using WebAssembly, heavily pipelined for near-native computational depth.
+                            </p>
                         </div>
                     </div>
                 </section>
             </main>
-
-            {/* Subtle Footer */}
-            <footer className="mt-20 border-t border-white/5 bg-zinc-950 py-10 text-center">
-                <p className="text-sm text-zinc-600">&copy; {new Date().getFullYear()} Chess AI. Built with Next.js and Generative AI.</p>
-            </footer>
         </div>
     );
 }

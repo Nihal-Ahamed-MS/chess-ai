@@ -49,6 +49,7 @@ export default function LoginPage() {
                 password: encryptedPassword,
             });
         } catch (err: any) {
+            console.error(err)
             setError(err.message);
         } finally {
             setLoading(false);

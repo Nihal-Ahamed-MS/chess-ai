@@ -13,15 +13,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { isLoading: authLoading } = useQuery({
         queryKey: ["authUser"],
         queryFn: async () => {
-            const token = getCookie("token");
-            if (!token) {
-                setUser(null);
-                setIsSessionValid(false);
-                return null;
-            }
-
             try {
-                const response = await VALIDATE_USER_SESSION({ token });
+                const response = await VALIDATE_USER_SESSION();
                 const fetchedUser = response?.user ?? response ?? null;
                 setUser(fetchedUser);
                 setIsSessionValid(true);

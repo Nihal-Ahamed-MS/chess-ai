@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { decrypt } from './lib/helper';
 
-const protectedRoutes = ['/dashboard'];
+const protectedRoutes = ['/dashboard', '/arena'];
 const publicRoutes = ['/login', '/signup', '/'];
 
 export default async function proxy(req: NextRequest) {
@@ -12,10 +12,10 @@ export default async function proxy(req: NextRequest) {
     const isPublicRoute = publicRoutes.includes(path)
 
     const cookie = (await cookies()).get('session')?.value
-    const session = await decrypt(cookie)
+    const session = cookie ? await decrypt(cookie) : null
 
     if (isProtectedRoute && !session?.userId) {
-        return NextResponse.redirect(new URL('/login', req.nextUrl))
+        return NextResponse.redirect(new URL('/auth/login', req.nextUrl))
     }
 
     if (isPublicRoute && session?.userId) {

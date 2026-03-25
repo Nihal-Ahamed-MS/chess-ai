@@ -6,23 +6,8 @@ import JSEncrypt from 'jsencrypt';
  */
 export function decrypt(encryptedDataBase64: string): string {
     try {
-        let privateKeyRaw = process.env.PRIVATE_KEY || '';
-
-        // Auto-format the private key if it lacks proper PEM newlines from the .env file
-        let privateKey = privateKeyRaw.replace(/\\n/g, '\n');
-        if (!privateKey.includes('\n')) {
-            const header = '-----BEGIN PRIVATE KEY-----';
-            const footer = '-----END PRIVATE KEY-----';
-            privateKey = privateKey.trim();
-            if (privateKey.startsWith(header) && privateKey.endsWith(footer)) {
-                const body = privateKey.substring(header.length, privateKey.length - footer.length).trim();
-                const formattedBody = body.match(/.{1,64}/g)?.join('\n') || body;
-                privateKey = `${header}\n${formattedBody}\n${footer}`;
-            }
-        }
-
         const decryptor = new JSEncrypt();
-        decryptor.setPrivateKey(privateKey);
+        decryptor.setPrivateKey(process.env.PRIVATE_KEY || '');
 
         const decrypted = decryptor.decrypt(encryptedDataBase64);
         return decrypted ? decrypted : encryptedDataBase64;
@@ -37,24 +22,11 @@ export function decrypt(encryptedDataBase64: string): string {
  */
 export function encrypt(data: string): string {
     try {
-        let publicKeyRaw = process.env.PUBLIC_KEY || '';
-        let publicKey = publicKeyRaw.replace(/\\n/g, '\n');
-
-        if (!publicKey.includes('\n')) {
-            const header = '-----BEGIN PUBLIC KEY-----';
-            const footer = '-----END PUBLIC KEY-----';
-            publicKey = publicKey.trim();
-            if (publicKey.startsWith(header) && publicKey.endsWith(footer)) {
-                const body = publicKey.substring(header.length, publicKey.length - footer.length).trim();
-                const formattedBody = body.match(/.{1,64}/g)?.join('\n') || body;
-                publicKey = `${header}\n${formattedBody}\n${footer}`;
-            }
-        }
-
         const encryptor = new JSEncrypt();
-        encryptor.setPublicKey(publicKey);
+        encryptor.setPublicKey(process.env.NEXT_PUBLIC_KEY || '');
 
         const encrypted = encryptor.encrypt(data);
+        console.log(encrypted, "encrypted")
         return encrypted ? encrypted : data;
     } catch (error) {
         console.error("RSA Encryption failed:", error);
@@ -66,6 +38,7 @@ export const getCookie = (name: String) => {
     try {
         const value = `; ${document.cookie}`;
         const parts = value?.split(`; ${name}=`) || [];
+        console.log(value, name, "parts")
 
         if (parts && parts.length === 2) return parts.pop()?.split(';').shift();
         return null;

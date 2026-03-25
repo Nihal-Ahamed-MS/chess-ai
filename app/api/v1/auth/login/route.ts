@@ -16,7 +16,6 @@ export async function POST(request: NextRequest) {
         }
 
         const decryptedPassword = decrypt(password);
-
         const validPassword = await bcryptjs.compare(decryptedPassword, user.password);
         if (!validPassword) {
             return NextResponse.json({ error: "Invalid password" }, { status: 400 });
@@ -28,7 +27,7 @@ export async function POST(request: NextRequest) {
             email: user.email
         };
 
-        const token = jwt.sign(tokenData, process.env.TOKEN_SECRET || "default_secret", {
+        const token = jwt.sign(tokenData, process.env.TOKEN_SECRET, {
             expiresIn: "1d"
         });
 
