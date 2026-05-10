@@ -39,4 +39,11 @@ export const MESSAGE_TYPE = {
 export const CHESS_PIECES_COLOR = {
     WHITE: WHITE,
     BLACK: BLACK,
-} as const;   
+} as const;
+
+export const COMMUNICATION_MSG = {
+    Init: "Init",
+    JoinQueue: "JoinQueue",
+    Move: "Move",
+    Matched: "Matched"
+}

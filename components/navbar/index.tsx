@@ -1,10 +1,13 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { BadgeCheckIcon, BellIcon, CreditCardIcon, LogOutIcon, Sparkles } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
 import { useAuth } from "@/store/context/AuthContenxt";
+import { logout } from "@/lib/helper";
+
 
 const Navbar = () => {
     const { isSessionValid } = useAuth();
@@ -13,8 +16,8 @@ const Navbar = () => {
         <header className="fixed top-0 z-50 w-full border-b border-white/5 bg-[#0a0a0a]/60 backdrop-blur-xl">
             <div className="container mx-auto flex h-16 items-center justify-between px-6 lg:px-8">
                 <Link href="/" className="group flex items-center gap-2 text-lg font-medium tracking-tight text-zinc-100 transition-opacity hover:opacity-90">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 border border-indigo-500/20 group-hover:bg-indigo-500/20 transition-colors">
-                        <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
+                    <div className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 border border-indigo-500/20 group-hover:bg-indigo-500/20 transition-colors overflow-hidden">
+                        <Image src="/logo.png" alt="Neural Logo" fill className="object-contain" />
                     </div>
                     Chess <span className="text-zinc-400 font-normal">AI</span>
                 </Link>
@@ -56,7 +59,9 @@ const Navbar = () => {
                                             </DropdownMenuItem>
                                         </DropdownMenuGroup>
                                         <DropdownMenuSeparator />
-                                        <DropdownMenuItem className="cursor-pointer">
+                                        <DropdownMenuItem onClick={() => {
+                                            logout()
+                                        }} className="cursor-pointer">
                                             <LogOutIcon />
                                             <p className="text-sm font-medium">Sign Out</p>
                                         </DropdownMenuItem>

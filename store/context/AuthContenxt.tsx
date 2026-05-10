@@ -3,6 +3,7 @@ import { createContext, useContext, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { VALIDATE_USER_SESSION } from "@/service/ui/auth.service";
 import { getCookie } from "@/lib/helper";
+import { Spinner } from "@/components/ui/spinner";
 
 // @ts-ignore
 const AuthContext = createContext<any>(null);
@@ -29,6 +30,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         retry: false,
         refetchOnWindowFocus: false,
     });
+
+    if (authLoading) return (
+        <div className="w-screen h-screen flex justify-center items-center">
+            <Spinner />
+        </div>
+    );
 
     return (
         <AuthContext.Provider value={{ user, authLoading, setUser, isSessionValid }}>

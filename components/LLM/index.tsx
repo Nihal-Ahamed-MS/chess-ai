@@ -34,7 +34,6 @@ const LLM = (props: any) => {
 
     return (
         <div className="flex flex-col h-full w-full max-w-2xl mx-auto bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm">
-            {/* Header */}
             <div className="flex items-center gap-3 px-6 py-4 border-b border-zinc-800 bg-zinc-900/80">
                 <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                     <Bot className="w-5 h-5 text-emerald-400" />
@@ -49,7 +48,6 @@ const LLM = (props: any) => {
                 </div>
             </div>
 
-            {/* Messages */}
             <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
                 {messages && messages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full text-center gap-4 py-12">
@@ -119,7 +117,6 @@ const LLM = (props: any) => {
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
             <div className="px-4 py-4 border-t border-zinc-800 bg-zinc-900/80">
                 <div className="flex items-center gap-2">
                     <Input
