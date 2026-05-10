@@ -6,8 +6,9 @@ import { Flag, Handshake, History } from 'lucide-react';
 
 import ChessBoard from '@/components/chessboard';
 import { COMMUNICATION_MSG } from '@/lib/constants';
-import useWebSocket, { ReadyState } from 'react-use-websocket';
+import useWebSocket from 'react-use-websocket';
 import { useAuth } from '@/store/context/AuthContenxt';
+import { GameResult, ServerMessage } from '@/app/types/area_types';
 
 const Arena = () => {
     const { user } = useAuth();
@@ -19,88 +20,127 @@ const Arena = () => {
     const [inQueue, setInQueue] = useState(false);
     const [playerColor, setPlayerColor] = useState<'white' | 'black'>('white');
     const [moves, setMoves] = useState<string[]>([]);
+    const [gameResult, setGameResult] = useState<GameResult | null>(null);
 
-    const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(
-        'ws://localhost:8080/game-ws',
-        {
-            shouldReconnect: () => true,
-            onOpen: () => console.log('OPEN'),
-            onClose: (e) => console.log('CLOSE', e),
-            onError: (e) => console.log('ERROR', e),
-            reconnectAttempts: 10,
-            reconnectInterval: 3000,
+    const userRef = useRef(user);
+    const playerColorRef = useRef<'white' | 'black'>('white');
+    const gameResultRef = useRef<GameResult | null>(null);
+    const updateGameRef = useRef<((sq: string, tq: string, p: string) => boolean) | null>(null);
+
+    const { sendJsonMessage } = useWebSocket(process.env.NEXT_PUBLIC_WS_URL + '/game-ws', {
+        shouldReconnect: () => true,
+        onOpen: () => {
+            const u = userRef.current;
+            if (u?._id) {
+                setInQueue(true);
+                sendJsonMessage({ type: COMMUNICATION_MSG.Init, player_id: u._id });
+            }
         },
-    );
+        onMessage: (event) => {
+            let msg: ServerMessage;
+            try {
+                msg = JSON.parse(event.data as string) as ServerMessage;
+            } catch {
+                return;
+            }
 
-    const updateGame = (sq: string, tq: string, p: string) => {
-        const currentGame = gameRef.current;
+            if ('game_status' in msg && msg.game_status === 'OnGoing') {
+                setGameId(msg.id);
+                setInQueue(false);
+                setPlayerColor(msg.black === userRef.current?._id ? 'black' : 'white');
+                setMoves([]);
+                setGameResult(null);
+                setGame(new Chess(msg.fen));
+            } else if ('type' in msg) {
+                if (msg.type === 'Matched') {
+                    setGameId(msg.game_id);
+                    setInQueue(false);
+                    setMoves([]);
+                    setGameResult(null);
+                } else if (msg.type === 'Waiting') {
+                    setInQueue(true);
+                } else if (msg.type === 'Move') {
+                    updateGameRef.current?.(msg.from, msg.to, 'q');
+                } else if (msg.type === 'Ended' && !gameResultRef.current) {
+                    handleGameEnd({
+                        winner: playerColorRef.current,
+                        reason: 'Opponent resigned',
+                    });
+                }
+            }
+        },
+        onClose: (e) => console.log('CLOSE', e),
+        onError: (e) => console.log('ERROR', e),
+        reconnectAttempts: 10,
+        reconnectInterval: 3000,
+    });
 
-        const move = currentGame.move({
-            from: sq,
-            to: tq,
-            promotion: p,
-        });
+    const handleGameEnd = useCallback((result: GameResult) => {
+        setGameResult(result);
+    }, [gameId]);
 
-        if (move === null) return false;
+    const updateGame = useCallback(
+        (sq: string, tq: string, p: string) => {
+            const currentGame = gameRef.current;
+            const move = currentGame.move({ from: sq, to: tq, promotion: p });
+            if (move === null) return false;
 
-        setMoves((prev) => [...prev, move.san]);
-        const updatedGame = new Chess(currentGame.fen());
-        setGame(updatedGame);
-    };
+            setMoves((prev) => [...prev, move.san]);
+            setGame(new Chess(currentGame.fen()));
 
-    const onDrop = useCallback(
-        ({ piece, sourceSquare, targetSquare }: any) => {
-            updateGame(sourceSquare, targetSquare, 'q');
-            if (gameId && user?._id) {
-                sendJsonMessage({
-                    game_id: gameId,
-                    player_id: user._id,
-                    from: sourceSquare,
-                    to: targetSquare,
-                    type: "Move"
-                });
+            if (currentGame.isCheckmate()) {
+                const winner = currentGame.turn() === 'w' ? 'black' : 'white';
+                handleGameEnd({ winner, reason: 'Checkmate' });
+            } else if (currentGame.isStalemate()) {
+                handleGameEnd({ winner: 'draw', reason: 'Stalemate' });
+            } else if (currentGame.isInsufficientMaterial()) {
+                handleGameEnd({ winner: 'draw', reason: 'Insufficient Material' });
+            } else if (currentGame.isThreefoldRepetition()) {
+                handleGameEnd({ winner: 'draw', reason: 'Threefold Repetition' });
             }
 
             return true;
         },
-        [gameId, user, sendJsonMessage],
+        [handleGameEnd],
     );
 
-    useEffect(() => {
-        if (readyState === ReadyState.OPEN && user?._id) {
-            console.log('WebSocket connected. Sending Init and joining queue...');
-            setInQueue(true);
-
-            sendJsonMessage({ type: COMMUNICATION_MSG.Init, player_id: user._id });
-        }
-    }, [readyState, user]);
-
-    useEffect(() => {
-        if (lastJsonMessage) {
-            console.log(lastJsonMessage, 'lastJsonMessage');
-            const msg: any = lastJsonMessage;
-            if (msg.type === 'Matched' || msg.game_status === 'OnGoing') {
-                setGameId(msg?.id || msg?.game_id);
-                setInQueue(false);
-
-                const color = msg.black === user?._id ? 'black' : 'white';
-                setPlayerColor(color);
-                setMoves([]);
-
-                if (msg.fen) {
-                    console.log(msg.fen, '')
-                    const updatedGame = new Chess(msg.fen);
-                    setGame(updatedGame);
-                }
-            } else if (msg.type === 'Waiting' || msg.Waiting) {
-                setInQueue(true);
-            } else if (msg.type === 'Move') {
-                console.log("broadcasted", msg)
-                moves.push(msg.to);
-                updateGame(msg.from, msg.to, "q")
+    const onDrop = useCallback(
+        ({ sourceSquare, targetSquare }: { sourceSquare: string; targetSquare: string }) => {
+            updateGame(sourceSquare, targetSquare, 'q');
+            const uid = userRef.current?._id;
+            if (gameId && uid) {
+                sendJsonMessage({
+                    game_id: gameId,
+                    player_id: uid,
+                    from: sourceSquare,
+                    to: targetSquare,
+                    type: 'Move',
+                });
             }
-        }
-    }, [lastJsonMessage, user?._id]);
+            return true;
+        },
+        [gameId, updateGame, sendJsonMessage],
+    );
+
+    const handleResign = useCallback(() => {
+        if (!gameId || gameResult) return;
+        sendJsonMessage({ type: 'END', game_id: gameId });
+        const winner = playerColor === 'white' ? 'black' : 'white';
+        handleGameEnd({ winner, reason: 'Resignation' });
+    }, [gameId, gameResult, playerColor, handleGameEnd, sendJsonMessage]);
+
+    useEffect(() => {
+        userRef.current = user;
+    }, [user]);
+    useEffect(() => {
+        playerColorRef.current = playerColor;
+    }, [playerColor]);
+    useEffect(() => {
+        gameResultRef.current = gameResult;
+    }, [gameResult]);
+    useEffect(() => {
+        updateGameRef.current = updateGame;
+    }, [updateGame]);
 
     return (
         <div className="relative flex h-screen w-screen overflow-hidden bg-[#09090b]">
@@ -117,7 +157,9 @@ const Arena = () => {
                             <p className="text-sm leading-none font-medium text-zinc-200">
                                 Anonymous
                             </p>
-                            <p className="mt-0.5 text-[11px] text-zinc-500 capitalize">{playerColor === 'white' ? 'Black' : 'White'}</p>
+                            <p className="mt-0.5 text-[11px] text-zinc-500 capitalize">
+                                {playerColor === 'white' ? 'Black' : 'White'}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -133,18 +175,15 @@ const Arena = () => {
                         <p className="text-xs text-zinc-700 italic">No moves yet</p>
                     ) : (
                         <div className="space-y-0.5 font-mono text-xs">
-                            {Array.from(
-                                { length: Math.ceil(moves.length / 2) },
-                                (_, i) => (
-                                    <div key={i} className="flex gap-2">
-                                        <span className="w-5 text-zinc-600">{i + 1}.</span>
-                                        <span className="text-zinc-300">{moves[i * 2]}</span>
-                                        {moves[i * 2 + 1] && (
-                                            <span className="text-zinc-500">{moves[i * 2 + 1]}</span>
-                                        )}
-                                    </div>
-                                ),
-                            )}
+                            {Array.from({ length: Math.ceil(moves.length / 2) }, (_, i) => (
+                                <div key={i} className="flex gap-2">
+                                    <span className="w-5 text-zinc-600">{i + 1}.</span>
+                                    <span className="text-zinc-300">{moves[i * 2]}</span>
+                                    {moves[i * 2 + 1] && (
+                                        <span className="text-zinc-500">{moves[i * 2 + 1]}</span>
+                                    )}
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
@@ -154,7 +193,11 @@ const Arena = () => {
                         <Handshake size={13} />
                         Offer Draw
                     </button>
-                    <button className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/15 bg-red-500/5 px-3 py-2 text-xs font-medium text-red-400/80 transition-colors hover:bg-red-500/10 hover:text-red-400">
+                    <button
+                        onClick={handleResign}
+                        disabled={!gameId || !!gameResult}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/15 bg-red-500/5 px-3 py-2 text-xs font-medium text-red-400/80 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
                         <Flag size={13} />
                         Resign
                     </button>
@@ -170,14 +213,16 @@ const Arena = () => {
                         </div>
                         <div>
                             <p className="text-sm leading-none font-medium text-zinc-200">You</p>
-                            <p className="mt-0.5 text-[11px] text-zinc-500 capitalize">{playerColor}</p>
+                            <p className="mt-0.5 text-[11px] text-zinc-500 capitalize">
+                                {playerColor}
+                            </p>
                         </div>
                     </div>
                 </div>
             </aside>
 
             <div className="relative z-10 flex flex-1 items-center justify-center">
-                {(!gameId || inQueue) && (
+                {(!gameId || inQueue) && !gameResult && (
                     <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/50 text-white backdrop-blur-[6px]">
                         <div className="pointer-events-none absolute h-[200%] w-[200%] animate-[spin_10s_linear_infinite] bg-gradient-to-tr from-emerald-500/10 via-transparent to-blue-500/10 blur-[60px]" />
                         <div className="relative z-10 flex flex-col items-center gap-6 p-8">
@@ -222,15 +267,49 @@ const Arena = () => {
                     </div>
                 )}
 
+                {gameResult && (
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/60 backdrop-blur-[6px]">
+                        <div className="flex flex-col items-center gap-4 rounded-2xl border border-zinc-700/50 bg-zinc-900/80 p-10 text-center shadow-2xl">
+                            <p className="text-4xl font-bold text-white">
+                                {gameResult.winner === 'draw'
+                                    ? 'Draw'
+                                    : gameResult.winner === playerColor
+                                      ? 'You won'
+                                      : 'You lost'}
+                            </p>
+                            <p className="text-sm text-zinc-400">{gameResult.reason}</p>
+                            <button
+                                onClick={() => {
+                                    setGameResult(null);
+                                    setGameId(null);
+                                    setInQueue(false);
+                                    setMoves([]);
+                                    gameRef.current = new Chess();
+                                    setGame(new Chess());
+                                }}
+                                className="mt-2 rounded-lg bg-indigo-600 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
+                            >
+                                Play again
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 <div
                     className={`overflow-hidden rounded-sm border border-zinc-800/50 shadow-2xl transition-all duration-1000 ease-in-out ${!gameId || inQueue ? 'scale-[0.98] opacity-20 blur-[4px] saturate-50' : 'scale-100 opacity-100'}`}
                     style={{
                         width: '500px',
                         height: '500px',
-                        pointerEvents: gameId ? 'auto' : 'none',
+                        pointerEvents: gameId && !gameResult ? 'auto' : 'none',
                     }}
                 >
-                    <ChessBoard options={{ position: game.fen(), onPieceDrop: onDrop, boardOrientation: playerColor }} />
+                    <ChessBoard
+                        options={{
+                            position: game.fen(),
+                            onPieceDrop: onDrop,
+                            boardOrientation: playerColor,
+                        }}
+                    />
                 </div>
             </div>
         </div>

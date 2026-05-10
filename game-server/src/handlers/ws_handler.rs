@@ -45,6 +45,19 @@ async fn db_insert_game(pool: &sqlx::PgPool, game: &Game) {
     }
 }
 
+async fn db_end_game(pool: &sqlx::PgPool, game_id: GameId, winner_id: &str) {
+    if let Err(e) = sqlx::query(
+        "UPDATE games SET game_status = 'Ended', result = $1 WHERE id = $2",
+    )
+    .bind(winner_id)
+    .bind(game_id)
+    .execute(pool)
+    .await
+    {
+        eprintln!("Failed to end game {}: {}", game_id, e);
+    }
+}
+
 async fn db_update_game_move(
     pool: &sqlx::PgPool,
     game_id: GameId,
@@ -258,6 +271,48 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
 
                     if let Some((id, fen, moves)) = db_snapshot {
                         db_update_game_move(&state.postgres_db, id, &fen, &moves).await;
+                    }
+                }
+
+                ClientGameMessage::END { game_id } => {
+                    let end_snapshot = {
+                        let connections = state.connections.lock().unwrap();
+                        let mut games = state.games.lock().unwrap();
+
+                        if let Some(game) = games.get_mut(&game_id) {
+                            let resigning_id = player
+                                .as_ref()
+                                .map(|p| p.id.clone())
+                                .unwrap_or_default();
+
+                            let winner_id = if game.white == resigning_id {
+                                game.black.clone()
+                            } else {
+                                game.white.clone()
+                            };
+
+                            game.game_status = GameStatus::Ended;
+                            game.result = Some(winner_id.clone());
+
+                            let ended_msg =
+                                serde_json::to_string(&ServerGameMessage::Ended).unwrap();
+
+                            if let Some(tx1) = connections.get(&game.white) {
+                                tx1.send(ended_msg.clone()).unwrap();
+                            }
+                            if let Some(tx2) = connections.get(&game.black) {
+                                tx2.send(ended_msg.clone()).unwrap();
+                            }
+
+                            Some((game_id, winner_id))
+                        } else {
+                            None
+                        }
+                    };
+
+                    if let Some((id, winner_id)) = end_snapshot {
+                        state.games.lock().unwrap().remove(&id);
+                        db_end_game(&state.postgres_db, id, &winner_id).await;
                     }
                 }
             }

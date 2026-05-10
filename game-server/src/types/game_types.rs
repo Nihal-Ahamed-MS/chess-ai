@@ -13,6 +13,9 @@ pub enum ClientGameMessage {
         from: String,
         to: String,
     },
+    END {
+        game_id: Uuid,
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

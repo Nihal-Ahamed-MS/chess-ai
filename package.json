@@ -4,6 +4,7 @@
     "private": true,
     "scripts": {
         "dev": "next dev",
+        "test-prod": "next dev NODE_ENV=production",
         "build": "next build",
         "start": "next start",
         "lint": "eslint",
