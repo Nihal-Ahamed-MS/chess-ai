@@ -63,7 +63,7 @@ const Navbar = () => {
                                             logout()
                                         }} className="cursor-pointer">
                                             <LogOutIcon />
-                                            <p className="text-sm font-medium">Sign Out</p>
+                                            <p className="text-sm font-medium">Log Out</p>
                                         </DropdownMenuItem>
                                     </>
 

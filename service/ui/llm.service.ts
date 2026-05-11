@@ -15,3 +15,23 @@ export const sendGameAnalytics = async ({ messages, pv, currentPlayer, currentGa
     const { data } = await axios.post("/api/v1/game-analytics", { messages, pv, currentPlayer, currentGame });
     return data.message;
 };
+
+export interface GameAnalyticsResult {
+    success: boolean;
+    wins: number;
+    losses: number;
+    draws: number;
+    total: number;
+}
+
+export const submitGameEmbedding = async (payload: {
+    gameId: string | null;
+    moves: string[];
+    winner: string;
+    playerColor: string;
+    finalFen: string;
+    playerId: string | null;
+}): Promise<GameAnalyticsResult> => {
+    const { data } = await axios.put<GameAnalyticsResult>("/api/v1/game-analytics", payload);
+    return data;
+};

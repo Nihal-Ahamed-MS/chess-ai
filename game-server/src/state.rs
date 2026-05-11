@@ -11,4 +11,5 @@ pub struct AppState {
     pub games: Mutex<HashMap<GameId, Game>>,
     pub postgres_db: PgPool,
     pub connections: Mutex<HashMap<PlayerId, mpsc::UnboundedSender<String>>>,
+    pub gemini_api_key: String,
 }

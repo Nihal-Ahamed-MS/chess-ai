@@ -15,6 +15,7 @@ export default function LoginPage() {
     const searchParams = useSearchParams();
     const [formData, setFormData] = useState({ email: "", password: "" });
     const [loading, setLoading] = useState(false);
+    const [activeTestUser, setActiveTestUser] = useState<number | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -34,6 +35,14 @@ export default function LoginPage() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleTestLogin = (user: number, email: string) => {
+        setError(null);
+        setSuccessMessage(null);
+        setActiveTestUser(user);
+        const encryptedPassword = encrypt("123");
+        mutation.mutate({ email, password: encryptedPassword }, { onSettled: () => setActiveTestUser(null) });
     };
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -140,6 +149,25 @@ export default function LoginPage() {
                             ) : (
                                 "Log in"
                             )}
+                        </Button>
+                    </div>
+
+                    <div className="flex gap-3">
+                        <Button
+                            type="button"
+                            disabled={mutation.isPending}
+                            onClick={() => handleTestLogin(1, "test@gmail.com")}
+                            className="flex-1 rounded-md bg-zinc-700 px-3 py-6 text-sm font-semibold text-zinc-200 hover:bg-zinc-600 transition-all"
+                        >
+                            {activeTestUser === 1 ? <Spinner data-icon="inline-start" /> : "Test User 1"}
+                        </Button>
+                        <Button
+                            type="button"
+                            disabled={mutation.isPending}
+                            onClick={() => handleTestLogin(2, "test2@gmail.com")}
+                            className="flex-1 rounded-md bg-zinc-700 px-3 py-6 text-sm font-semibold text-zinc-200 hover:bg-zinc-600 transition-all"
+                        >
+                            {activeTestUser === 2 ? <Spinner data-icon="inline-start" /> : "Test User 2"}
                         </Button>
                     </div>
 

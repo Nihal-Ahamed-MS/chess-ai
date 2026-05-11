@@ -2,16 +2,20 @@
 
 import { Chess } from 'chess.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Flag, Handshake, History } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
 
 import ChessBoard from '@/components/chessboard';
 import { COMMUNICATION_MSG } from '@/lib/constants';
 import useWebSocket from 'react-use-websocket';
 import { useAuth } from '@/store/context/AuthContenxt';
 import { GameResult, ServerMessage } from '@/app/types/area_types';
+import { submitGameEmbedding, GameAnalyticsResult } from '@/service/ui/llm.service';
 
 const Arena = () => {
     const { user } = useAuth();
+    const router = useRouter();
 
     const [game, setGame] = useState(new Chess());
     const gameRef = useRef(game);
@@ -21,11 +25,18 @@ const Arena = () => {
     const [playerColor, setPlayerColor] = useState<'white' | 'black'>('white');
     const [moves, setMoves] = useState<string[]>([]);
     const [gameResult, setGameResult] = useState<GameResult | null>(null);
+    const [analyticsData, setAnalyticsData] = useState<GameAnalyticsResult | null>(null);
 
     const userRef = useRef(user);
     const playerColorRef = useRef<'white' | 'black'>('white');
     const gameResultRef = useRef<GameResult | null>(null);
-    const updateGameRef = useRef<((sq: string, tq: string, p: string) => boolean) | null>(null);
+    const gameIdRef = useRef<string | null>(null);
+    const updateGameRef = useRef<((sq: string, tq: string, p: string) => GameResult | null) | null>(null);
+
+    const { mutate: submitAnalytics, isPending: analyticsLoading } = useMutation({
+        mutationFn: submitGameEmbedding,
+        onSuccess: (data) => setAnalyticsData(data),
+    });
 
     const { sendJsonMessage } = useWebSocket(process.env.NEXT_PUBLIC_WS_URL + '/game-ws', {
         shouldReconnect: () => true,
@@ -75,38 +86,50 @@ const Arena = () => {
         reconnectInterval: 3000,
     });
 
-    const handleGameEnd = useCallback((result: GameResult) => {
-        setGameResult(result);
-    }, [gameId]);
+    const handleGameEnd = useCallback(
+        (result: GameResult) => {
+            setGameResult(result);
+            submitAnalytics({
+                gameId: gameIdRef.current,
+                moves: gameRef.current.history(),
+                winner: result.winner,
+                playerColor: playerColorRef.current,
+                finalFen: gameRef.current.fen(),
+                playerId: userRef.current?._id ?? null,
+            });
+        },
+        [submitAnalytics],
+    );
 
     const updateGame = useCallback(
-        (sq: string, tq: string, p: string) => {
+        (sq: string, tq: string, p: string): GameResult | null => {
             const currentGame = gameRef.current;
             const move = currentGame.move({ from: sq, to: tq, promotion: p });
-            if (move === null) return false;
+            if (move === null) return null;
 
             setMoves((prev) => [...prev, move.san]);
             setGame(new Chess(currentGame.fen()));
 
+            let result: GameResult | null = null;
             if (currentGame.isCheckmate()) {
-                const winner = currentGame.turn() === 'w' ? 'black' : 'white';
-                handleGameEnd({ winner, reason: 'Checkmate' });
+                result = { winner: currentGame.turn() === 'w' ? 'black' : 'white', reason: 'Checkmate' };
             } else if (currentGame.isStalemate()) {
-                handleGameEnd({ winner: 'draw', reason: 'Stalemate' });
+                result = { winner: 'draw', reason: 'Stalemate' };
             } else if (currentGame.isInsufficientMaterial()) {
-                handleGameEnd({ winner: 'draw', reason: 'Insufficient Material' });
+                result = { winner: 'draw', reason: 'Insufficient Material' };
             } else if (currentGame.isThreefoldRepetition()) {
-                handleGameEnd({ winner: 'draw', reason: 'Threefold Repetition' });
+                result = { winner: 'draw', reason: 'Threefold Repetition' };
             }
 
-            return true;
+            if (result) handleGameEnd(result);
+            return result;
         },
         [handleGameEnd],
     );
 
     const onDrop = useCallback(
         ({ sourceSquare, targetSquare }: { sourceSquare: string; targetSquare: string }) => {
-            updateGame(sourceSquare, targetSquare, 'q');
+            const result = updateGame(sourceSquare, targetSquare, 'q');
             const uid = userRef.current?._id;
             if (gameId && uid) {
                 sendJsonMessage({
@@ -116,6 +139,9 @@ const Arena = () => {
                     to: targetSquare,
                     type: 'Move',
                 });
+            }
+            if (result && gameId) {
+                sendJsonMessage({ type: 'GameOver', game_id: gameId, winner: result.winner });
             }
             return true;
         },
@@ -138,6 +164,9 @@ const Arena = () => {
     useEffect(() => {
         gameResultRef.current = gameResult;
     }, [gameResult]);
+    useEffect(() => {
+        gameIdRef.current = gameId;
+    }, [gameId]);
     useEffect(() => {
         updateGameRef.current = updateGame;
     }, [updateGame]);
@@ -278,19 +307,44 @@ const Arena = () => {
                                       : 'You lost'}
                             </p>
                             <p className="text-sm text-zinc-400">{gameResult.reason}</p>
-                            <button
-                                onClick={() => {
-                                    setGameResult(null);
-                                    setGameId(null);
-                                    setInQueue(false);
-                                    setMoves([]);
-                                    gameRef.current = new Chess();
-                                    setGame(new Chess());
-                                }}
-                                className="mt-2 rounded-lg bg-indigo-600 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
-                            >
-                                Play again
-                            </button>
+
+                            {analyticsLoading ? (
+                                <div className="mt-2 flex items-center gap-2 text-xs text-zinc-500">
+                                    <div className="h-3.5 w-3.5 animate-spin rounded-full border border-zinc-600 border-t-zinc-400" />
+                                    Analyzing game...
+                                </div>
+                            ) : (
+                                <>
+                                    {analyticsData && analyticsData.total > 0 && (
+                                        <div className="mt-2 flex gap-4 text-xs">
+                                            {`You have ${playerColor === gameResult.winner ? "Won" : "Lost"} ${analyticsData.total} similar games, Click analyze to fix your mistakes with LLM`}
+                                        </div>
+                                    )}
+                                    <div className="mt-2 flex gap-2">
+                                        <button
+                                            onClick={() => {
+                                                setGameResult(null);
+                                                setAnalyticsData(null);
+                                                setGameId(null);
+                                                setInQueue(false);
+                                                setMoves([]);
+                                                gameRef.current = new Chess();
+                                                setGame(new Chess());
+                                                sendJsonMessage({ type: COMMUNICATION_MSG.Init, player_id: user._id });
+                                            }}
+                                            className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
+                                        >
+                                            Play again
+                                        </button>
+                                        <button
+                                            onClick={() => router.push('/analytics')}
+                                            className="rounded-lg border border-zinc-700/50 bg-zinc-800/60 px-6 py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-700/60 hover:text-white"
+                                        >
+                                            Analyze
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}

@@ -154,17 +154,14 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                             }
                         }
                     }
-                    
+
                     if let Some(game) = existing_game {
                         let msg = serde_json::to_string(&game).unwrap();
                         tx.send(msg).unwrap();
                     } else if let Some(game) = join_queue(state.clone(), p) {
                         {
                             let connections = state.connections.lock().unwrap();
-                            let msg = serde_json::to_string(&ServerGameMessage::Matched {
-                                game_id: game.id.to_string(),
-                            })
-                            .unwrap();
+                            let msg = serde_json::to_string(&game).unwrap();
 
                             if let Some(tx1) = connections.get(&game.white) {
                                 tx1.send(msg.clone()).unwrap();
@@ -172,7 +169,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                             if let Some(tx2) = connections.get(&game.black) {
                                 tx2.send(msg.clone()).unwrap();
                             }
-                        } // connections lock released before await
+                        }
 
                         db_insert_game(&state.postgres_db, &game).await;
                     } else {
@@ -304,15 +301,53 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                                 tx2.send(ended_msg.clone()).unwrap();
                             }
 
-                            Some((game_id, winner_id))
+                            Some((game_id, winner_id, game.moves.clone()))
                         } else {
                             None
                         }
                     };
 
-                    if let Some((id, winner_id)) = end_snapshot {
+                    if let Some((id, winner_id, moves)) = end_snapshot {
                         state.games.lock().unwrap().remove(&id);
                         db_end_game(&state.postgres_db, id, &winner_id).await;
+                    }
+                }
+
+                ClientGameMessage::GameOver { game_id, winner } => {
+                    let snapshot = {
+                        let connections = state.connections.lock().unwrap();
+                        let mut games = state.games.lock().unwrap();
+
+                        if let Some(game) = games.get_mut(&game_id) {
+                            let winner_id = match winner.as_str() {
+                                "white" => Some(game.white.clone()),
+                                "black" => Some(game.black.clone()),
+                                _ => None, // draw — no winner
+                            };
+
+                            game.game_status = GameStatus::Ended;
+                            game.result = winner_id.clone();
+
+                            let ended_msg =
+                                serde_json::to_string(&ServerGameMessage::Ended).unwrap();
+
+                            if let Some(tx1) = connections.get(&game.white) {
+                                tx1.send(ended_msg.clone()).unwrap();
+                            }
+                            if let Some(tx2) = connections.get(&game.black) {
+                                tx2.send(ended_msg.clone()).unwrap();
+                            }
+
+                            Some((game_id, winner_id, game.moves.clone()))
+                        } else {
+                            None
+                        }
+                    };
+
+                    if let Some((id, winner_id, moves)) = snapshot {
+                        state.games.lock().unwrap().remove(&id);
+                        let winner_str = winner_id.as_deref().unwrap_or("draw");
+                        db_end_game(&state.postgres_db, id, winner_str).await;
                     }
                 }
             }

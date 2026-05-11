@@ -15,7 +15,11 @@ pub enum ClientGameMessage {
     },
     END {
         game_id: Uuid,
-    }
+    },
+    GameOver {
+        game_id: Uuid,
+        winner: String, // "white" | "black" | "draw"
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

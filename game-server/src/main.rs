@@ -53,11 +53,14 @@ async fn main() {
         }
     };
 
+    let gemini_api_key = env::var("GEMINI_API_KEY").unwrap_or_default();
+
     let state = Arc::new(AppState {
         queue: Mutex::new(VecDeque::new()),
         games: Mutex::new(HashMap::new()),
         postgres_db: pool.clone(),
         connections: Mutex::new(HashMap::new()),
+        gemini_api_key,
     });
 
     let app = create_router(state);
