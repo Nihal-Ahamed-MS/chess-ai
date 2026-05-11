@@ -1,4 +1,4 @@
-import { ANALYZE_GAME_WITH_LLM } from "@/service/backend/llm.service";
+import { ANALYZE_GAME_WITH_LLM, ANALYZE_SIMILAR_LOSSES } from "@/service/backend/llm.service";
 import { getGameDb } from "@/db/postgres/connection";
 import { GoogleGenAI } from "@google/genai";
 import { NextRequest, NextResponse } from "next/server";
@@ -19,44 +19,61 @@ export async function GET(req: NextRequest) {
 
         const db = getGameDb();
 
-        const { rows } = await db.query<{
-            wins: string;
-            losses: string;
-            draws: string;
-            total: string;
-        }>(
+        // Determine outcome of the current game for this player
+        const { rows: gameRows } = await db.query<{ white: string; black: string; result: string }>(
+            'SELECT white, black, result FROM games WHERE id = $1',
+            [gameId],
+        );
+        const currentGame = gameRows[0];
+        if (!currentGame) {
+            return NextResponse.json({ error: 'Game not found' }, { status: 404 });
+        }
+
+        const playerColor = currentGame.white === playerId ? 'white' : 'black';
+        const playerWon =
+            (playerColor === 'white' && currentGame.result === 'white') ||
+            (playerColor === 'black' && currentGame.result === 'black');
+        const outcome = playerWon ? 'win' : 'loss';
+
+        // Find similar games with the same outcome
+        const winFilter = `(g.white = $2 AND g.result = 'white') OR (g.black = $2 AND g.result = 'black')`;
+        const lossFilter = `(g.white = $2 AND g.result = 'black') OR (g.black = $2 AND g.result = 'white')`;
+        const outcomeFilter = playerWon ? winFilter : lossFilter;
+
+        const { rows } = await db.query<{ moves: { from: string; to: string }[] | null }>(
             `WITH target AS (
                 SELECT embedding FROM games WHERE id = $1 AND embedding IS NOT NULL
             ),
             nearby AS (
-                SELECT g.white, g.black, g.result
+                SELECT g.moves
                 FROM games g, target t
                 WHERE g.id != $1
                   AND g.embedding IS NOT NULL
-                  AND (g.white = $2 OR g.black = $2)
+                  AND (${outcomeFilter})
                 ORDER BY g.embedding <=> t.embedding
-                LIMIT 20
+                LIMIT 5
             )
-            SELECT
-                COUNT(*) FILTER (
-                    WHERE (white = $2 AND result = 'white') OR (black = $2 AND result = 'black')
-                ) AS wins,
-                COUNT(*) FILTER (
-                    WHERE (white = $2 AND result = 'black') OR (black = $2 AND result = 'white')
-                ) AS losses,
-                COUNT(*) FILTER (WHERE result = 'draw') AS draws,
-                COUNT(*) AS total
-            FROM nearby`,
+            SELECT moves FROM nearby`,
             [gameId, playerId],
         );
 
-        const row = rows[0] ?? { wins: '0', losses: '0', draws: '0', total: '0' };
-        return NextResponse.json({
-            wins: Number(row.wins),
-            losses: Number(row.losses),
-            draws: Number(row.draws),
-            total: Number(row.total),
-        });
+        if (rows.length === 0) {
+            return NextResponse.json({
+                analysis: null,
+                outcome,
+                message: `No similar ${outcome === 'win' ? 'won' : 'lost'} games found yet.`,
+            });
+        }
+
+        const gamesText = rows
+            .map((r, i) => {
+                const moveList = (r.moves ?? []).map((m) => `${m.from}${m.to}`).join(' ');
+                return `Game ${i + 1}: ${moveList || '(no moves recorded)'}`;
+            })
+            .join('\n');
+
+        const response = await ANALYZE_SIMILAR_LOSSES({ playerColor, games: gamesText, outcome });
+        return NextResponse.json({ analysis: response.text ?? '', outcome });
     } catch (error: any) {
         console.error('Error:', error);
         return NextResponse.json({ error: error.message || 'Failed to fetch analytics' }, { status: 500 });

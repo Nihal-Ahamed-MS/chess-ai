@@ -24,6 +24,15 @@ export interface GameAnalyticsResult {
     total: number;
 }
 
+export const fetchSimilarLossAnalysis = async (params: {
+    gameId: string;
+    playerId: string;
+    playerColor: string;
+}): Promise<{ analysis: string | null; message?: string }> => {
+    const { data } = await axios.get('/api/v1/game-analytics', { params });
+    return data;
+};
+
 export const submitGameEmbedding = async (payload: {
     gameId: string | null;
     moves: string[];

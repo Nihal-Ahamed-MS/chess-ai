@@ -14,14 +14,24 @@ Current Game FEN: ${currentGame}
 `;
 
 const SYSTEM_INSTRUCTION_FOR_GAME_ANALYTICS = ({ pv, currentPlayer, currentGame }: { pv: string, currentPlayer: string, currentGame: string }) => `
-You are a chess coach and MODEL integrated into a Chess AI application. 
-You help current user improve their chess game by analyzing their games and providing feedback. 
+You are a chess coach and MODEL integrated into a Chess AI application.
+You help current user improve their chess game by analyzing their games and providing feedback.
 Keep your responses concise and helpful. Use algebraic notation when referring to moves. You are provided with the Principle Variable (PV) and FEN of the current move.
 
 Here are the game details:
-PV: ${pv} 
-Player piece color: ${currentPlayer} 
+PV: ${pv}
+Player piece color: ${currentPlayer}
 Current Game FEN: ${currentGame}`;
+
+const SYSTEM_INSTRUCTION_FOR_SIMILAR_LOSSES = ({ playerColor, games, outcome }: { playerColor: string, games: string, outcome: string }) => `
+You are a chess coach. The player was playing as ${playerColor} and ${outcome === 'win' ? 'won' : 'lost'} these games, which are positionally similar to their most recent game.
+${outcome === 'win'
+    ? 'Identify the key moves, tactical patterns, and strategic decisions that led to these wins. What should the player keep doing?'
+    : 'Identify the recurring mistakes, tactical patterns, or strategic errors that caused these losses. What should the player fix?'}
+Be specific about move sequences. Keep your response concise and actionable.
+
+Games (moves in UCI notation):
+${games}`;
 
 export const ANALYZE_GAME_WITH_LLM = async ({ pv, currentPlayer, currentGame }: { pv: string, currentPlayer: string, currentGame: string }) => {
     const response = await GEMINI_API.models.generateContent({
@@ -31,6 +41,24 @@ export const ANALYZE_GAME_WITH_LLM = async ({ pv, currentPlayer, currentGame }: 
         ],
         config: {
             systemInstruction: SYSTEM_INSTRUCTION_FOR_GAME_ANALYTICS({ pv, currentPlayer, currentGame }),
+        },
+    });
+
+    return response;
+}
+
+export const ANALYZE_SIMILAR_LOSSES = async ({ playerColor, games, outcome }: { playerColor: string, games: string, outcome: string }) => {
+    const userPrompt = outcome === 'win'
+        ? 'What patterns helped me win these similar games?'
+        : 'What mistakes am I repeatedly making in these similar lost games?';
+
+    const response = await GEMINI_API.models.generateContent({
+        model: GEMINI_MODEL_NAME,
+        contents: [
+            { role: MESSAGE_TYPE.USER, parts: [{ text: userPrompt }] },
+        ],
+        config: {
+            systemInstruction: SYSTEM_INSTRUCTION_FOR_SIMILAR_LOSSES({ playerColor, games, outcome }),
         },
     });
 

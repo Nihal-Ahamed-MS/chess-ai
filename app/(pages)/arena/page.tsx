@@ -362,6 +362,10 @@ const Arena = () => {
                             position: game.fen(),
                             onPieceDrop: onDrop,
                             boardOrientation: playerColor,
+                            canDragPiece: ({ piece }: { piece: string }) => {
+                                const myColor = playerColorRef.current === 'white' ? 'w' : 'b';
+                                return piece[0] === myColor && gameRef.current.turn() === myColor;
+                            },
                         }}
                     />
                 </div>

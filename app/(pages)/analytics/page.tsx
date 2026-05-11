@@ -13,11 +13,11 @@ import { CHESS_PIECES_COLOR, COMMUNICATION_MSG, MESSAGE_TYPE, UCI_COMMANDS } fro
 import LLM from "@/components/LLM";
 import { ChatMessage, sendChatMessage, sendGameAnalytics } from "@/service/ui/llm.service";
 import { useMutation } from "@tanstack/react-query";
-import useWebSocket, { ReadyState } from "react-use-websocket";
 import { useAuth } from "@/store/context/AuthContenxt";
 
 const Arena = () => {
     const [loader, setLoader] = useState(true);
+    const { gameId } = useParams();
     const { user } = useAuth();
 
     const currentPlayerRef = useRef(CHESS_PIECES_COLOR.WHITE);
@@ -26,21 +26,6 @@ const Arena = () => {
 
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-
-    const [gameId, setGameId] = useState<string | null>(null);
-    const [inQueue, setInQueue] = useState(false);
-
-    const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(
-        "ws://localhost:8080/game-ws",
-        {
-            shouldReconnect: () => true,
-            onOpen: () => console.log("OPEN"),
-            onClose: (e) => console.log("CLOSE", e),
-            onError: (e) => console.log("ERROR", e),
-            reconnectAttempts: 10,
-            reconnectInterval: 3000,
-        }
-    );
 
     const scrollToBottom = useCallback(() => {
         setTimeout(() => {
@@ -87,20 +72,8 @@ const Arena = () => {
         console.log("Updatedgame:", updatedGame.fen());
         stockfishService.evaluatePosition(updatedGame.fen(), 15);
 
-        // 3. Once game started whenever user plays send moves
-        if (gameId && user?._id) {
-            sendJsonMessage({
-                Move: {
-                    game_id: gameId,
-                    player_id: user._id,
-                    from: sourceSquare,
-                    to: targetSquare
-                }
-            });
-        }
-
         return true;
-    }, [gameId, user, sendJsonMessage]);
+    }, [gameId, user]);
 
     const initializeStockfish = () => {
         stockfishService.init().then(() => {
@@ -111,28 +84,6 @@ const Arena = () => {
             setLoader(false);
         });
     }
-
-    useEffect(() => {
-        if (readyState === ReadyState.OPEN && user?._id) {
-            console.log("WebSocket connected. Sending Init and joining queue...");
-            setInQueue(true);
-
-            sendJsonMessage({ type: COMMUNICATION_MSG.Init, player_id: user._id });
-        }
-    }, [readyState, user]);
-
-    useEffect(() => {
-        if (lastJsonMessage) {
-            console.log(lastJsonMessage, "lastJsonMessage");
-            const msg: any = lastJsonMessage;
-            if (msg.type === "Matched") {
-                setGameId(msg);
-                setInQueue(false);
-            } else if (msg.type === "Waiting" || msg.Waiting) {
-                setInQueue(true);
-            }
-        }
-    }, [lastJsonMessage]);
 
     useEffect(() => {
         initializeStockfish();
@@ -165,13 +116,8 @@ const Arena = () => {
             }
         });
 
-        const unsubscribeGeneral = stockfishService.onMessage((message: string) => {
-            // console.info("Stockfish:", message);
-        });
-
         return () => {
             unsubscribeEval();
-            unsubscribeGeneral();
             stockfishService.destroy();
         };
     }, []);
@@ -182,15 +128,8 @@ const Arena = () => {
         </div>
     );
 
-
     return (
         <div className="w-screen h-screen flex bg-[#09090b] relative overflow-hidden">
-            {/* <div className="absolute inset-0 z-0 pointer-events-none">
-                <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.025) 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_50%,rgba(99,102,241,0.04),transparent)]" />
-                <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-emerald-500/[0.04] rounded-full blur-[120px]" />
-                <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-blue-500/[0.04] rounded-full blur-[120px]" />
-            </div> */}
 
             <aside className="relative z-10 flex flex-col w-56 h-full border-r border-zinc-800/50 bg-zinc-900/20 backdrop-blur-sm shrink-0">
                 <div className="p-4 border-b border-zinc-800/40">
@@ -199,7 +138,7 @@ const Arena = () => {
                         <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700/50 flex items-center justify-center text-xs text-zinc-400">?</div>
                         <div>
                             <p className="text-sm font-medium text-zinc-200 leading-none">Anonymous</p>
-                            <p className="text-[11px] text-zinc-500 mt-0.5">Black</p>
+                            <p className="text-[11px] text-zinc-500 mt-0.5">{currentPlayerRef?.current || "-"}</p>
                         </div>
                     </div>
                 </div>
@@ -243,14 +182,14 @@ const Arena = () => {
                         </div>
                         <div>
                             <p className="text-sm font-medium text-zinc-200 leading-none">You</p>
-                            <p className="text-[11px] text-zinc-500 mt-0.5">White</p>
+                            <p className="text-[11px] text-zinc-500 mt-0.5">{currentPlayerRef?.current || "-"}</p>
                         </div>
                     </div>
                 </div>
             </aside>
 
             <div className="relative z-10 flex-1 flex items-center justify-center">
-                {(!gameId || inQueue) && (
+                {(!gameId) && (
                     <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/50 backdrop-blur-[6px] text-white">
                         <div className="absolute w-[200%] h-[200%] bg-gradient-to-tr from-emerald-500/10 via-transparent to-blue-500/10 animate-[spin_10s_linear_infinite] blur-[60px] pointer-events-none" />
                         <div className="flex flex-col items-center gap-6 relative z-10 p-8">
@@ -269,9 +208,9 @@ const Arena = () => {
                             </div>
                             <div className="text-center space-y-3">
                                 <h2 className="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-white from-emerald-200 to-blue-200">
-                                    Finding Opponent
+                                    Analysis 
                                 </h2>
-                                <p className="text-xs font-medium text-zinc-400 tracking-[0.2em] uppercase">Matchmaking in progress</p>
+                                <p className="text-xs font-medium text-zinc-400 tracking-[0.2em] uppercase">Trying to find matching previous games</p>
                             </div>
                             <div className="flex gap-1.5">
                                 <div className="w-1 h-1 rounded-full bg-gray-400/80 animate-[bounce_1s_infinite_-0.3s]" />
@@ -283,7 +222,7 @@ const Arena = () => {
                 )}
 
                 <div
-                    className={`transition-all duration-1000 ease-in-out shadow-2xl rounded-sm overflow-hidden border border-zinc-800/50 ${(!gameId || inQueue) ? "opacity-20 scale-[0.98] blur-[4px] saturate-50" : "opacity-100 scale-100"}`}
+                    className={`transition-all duration-1000 ease-in-out shadow-2xl rounded-sm overflow-hidden border border-zinc-800/50 ${(!gameId) ? "opacity-20 scale-[0.98] blur-[4px] saturate-50" : "opacity-100 scale-100"}`}
                     style={{ width: "500px", height: "500px", pointerEvents: gameId ? "auto" : "none" }}
                 >
                     <ChessBoard options={{ position: game.fen(), onPieceDrop: onDrop }} />
