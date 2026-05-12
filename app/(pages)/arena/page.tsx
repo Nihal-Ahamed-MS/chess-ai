@@ -11,7 +11,8 @@ import { COMMUNICATION_MSG } from '@/lib/constants';
 import useWebSocket from 'react-use-websocket';
 import { useAuth } from '@/store/context/AuthContenxt';
 import { GameResult, ServerMessage } from '@/app/types/area_types';
-import { submitGameEmbedding, GameAnalyticsResult } from '@/service/ui/llm.service';
+import { submitGameEmbedding } from '@/service/ui/llm.service';
+import { GameAnalyticsResult } from '@/types/analytics_types';
 
 const Arena = () => {
     const { user } = useAuth();

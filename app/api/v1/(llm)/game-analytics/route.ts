@@ -19,9 +19,8 @@ export async function GET(req: NextRequest) {
 
         const db = getGameDb();
 
-        // Determine outcome of the current game for this player
         const { rows: gameRows } = await db.query<{ white: string; black: string; result: string }>(
-            'SELECT white, black, result FROM games WHERE id = $1',
+            'SELECT white, black, result, fen, moves FROM games WHERE id = $1',
             [gameId],
         );
         const currentGame = gameRows[0];
@@ -35,7 +34,6 @@ export async function GET(req: NextRequest) {
             (playerColor === 'black' && currentGame.result === 'black');
         const outcome = playerWon ? 'win' : 'loss';
 
-        // Find similar games with the same outcome
         const winFilter = `(g.white = $2 AND g.result = 'white') OR (g.black = $2 AND g.result = 'black')`;
         const lossFilter = `(g.white = $2 AND g.result = 'black') OR (g.black = $2 AND g.result = 'white')`;
         const outcomeFilter = playerWon ? winFilter : lossFilter;
@@ -61,6 +59,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({
                 analysis: null,
                 outcome,
+                gameData: currentGame,
                 message: `No similar ${outcome === 'win' ? 'won' : 'lost'} games found yet.`,
             });
         }
@@ -73,7 +72,7 @@ export async function GET(req: NextRequest) {
             .join('\n');
 
         const response = await ANALYZE_SIMILAR_LOSSES({ playerColor, games: gamesText, outcome });
-        return NextResponse.json({ analysis: response.text ?? '', outcome });
+        return NextResponse.json({ analysis: response.text ?? '', outcome, gameData: currentGame });
     } catch (error: any) {
         console.error('Error:', error);
         return NextResponse.json({ error: error.message || 'Failed to fetch analytics' }, { status: 500 });
@@ -92,7 +91,7 @@ export async function PUT(req: NextRequest) {
         );
 
         if (!existing[0]?.has_embedding) {
-            const moveText = `Chess game moves: ${(moves as string[]).join(' ')} Final position: ${finalFen} Winner: ${winner} Player color: ${playerColor}`;
+            const moveText = `Chess gameData moves: ${(moves as string[]).join(' ')} Final position: ${finalFen} Winner: ${winner} Player color: ${playerColor}`;
 
             const embedResult = await genAI.models.embedContent({
                 model: 'gemini-embedding-2',

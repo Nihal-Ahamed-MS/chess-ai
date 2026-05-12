@@ -2,26 +2,28 @@
 "use client";
 
 import { Chess } from "chess.js";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Flag, Handshake, History } from "lucide-react";
+import { History } from "lucide-react";
 
 import stockfishService, { EvalInfo } from "@/service/ui/stockfish.service";
 import ChessBoard from "@/components/chessboard";
 import { Spinner } from "@/components/ui/spinner";
-import { CHESS_PIECES_COLOR, COMMUNICATION_MSG, MESSAGE_TYPE, UCI_COMMANDS } from "@/lib/constants";
+import { CHESS_PIECES_COLOR, MESSAGE_TYPE } from "@/lib/constants";
 import LLM from "@/components/LLM";
-import { ChatMessage, sendChatMessage, sendGameAnalytics } from "@/service/ui/llm.service";
-import { useMutation } from "@tanstack/react-query";
+import { ChatMessage, sendChatMessage, getGameAnalytics } from "@/service/ui/llm.service";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/store/context/AuthContenxt";
 
 const Arena = () => {
     const [loader, setLoader] = useState(true);
-    const { gameId } = useParams();
+    const params = useSearchParams();
+    const gameId = params.get("gameId")
     const { user } = useAuth();
 
     const currentPlayerRef = useRef(CHESS_PIECES_COLOR.WHITE);
     const [game, setGame] = useState(new Chess());
+    const [moves, setMoves] = useState([])
     const gameRef = useRef(game);
 
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -33,8 +35,31 @@ const Arena = () => {
         }, 100);
     }, []);
 
+    const { data: analyticsData } = useQuery({
+        queryKey: ["game-analytics", gameId, user?._id],
+        queryFn: () => getGameAnalytics({ gameId: gameId!, playerId: user!._id }),
+        enabled: !!gameId && !!user?._id,
+        staleTime: Infinity,
+    });
+
+    useEffect(() => {
+        if (!analyticsData) return;
+        setTimeout(() => {
+            if (analyticsData?.gameData && Object.keys(analyticsData?.gameData).length) {
+                const updatedGame = new Chess(analyticsData?.gameData.fen);
+                setGame(updatedGame);
+                setMoves(analyticsData?.gameData?.moves)
+            }
+            setMessages((prev) => [
+                ...prev,
+                { role: MESSAGE_TYPE.MODEL, content: analyticsData?.analysis || analyticsData?.message || "" },
+            ]);
+            scrollToBottom();
+        }, 0);
+    }, [analyticsData, scrollToBottom]);
+
     const chatMutation = useMutation({
-        mutationFn: (payload: any) => sendChatMessage({ messages: payload, currentPlayer: currentPlayerRef.current, currentGame: gameRef.current.fen() }),
+        mutationFn: (payload: ChatMessage[]) => sendChatMessage({ messages: payload, currentPlayer: currentPlayerRef.current, currentGame: gameRef.current.fen() }),
         onSuccess: (response) => {
             setMessages((prev: ChatMessage[]) => [
                 ...prev,
@@ -44,18 +69,7 @@ const Arena = () => {
         },
     });
 
-    const gameAnalyticsMutation = useMutation({
-        mutationFn: (payload: any) => sendGameAnalytics(payload),
-        onSuccess: (response) => {
-            setMessages((prev: ChatMessage[]) => [
-                ...prev,
-                { role: MESSAGE_TYPE.MODEL, content: response },
-            ]);
-            scrollToBottom();
-        },
-    });
-
-    const onDrop = useCallback(({ piece, sourceSquare, targetSquare }: any) => {
+    const onDrop = useCallback(({ sourceSquare, targetSquare }: any) => {
         const currentGame = gameRef.current;
 
         const move = currentGame.move({
@@ -69,11 +83,10 @@ const Arena = () => {
         const updatedGame = new Chess(currentGame.fen());
         setGame(updatedGame);
 
-        console.log("Updatedgame:", updatedGame.fen());
         stockfishService.evaluatePosition(updatedGame.fen(), 15);
 
         return true;
-    }, [gameId, user]);
+    }, []);
 
     const initializeStockfish = () => {
         stockfishService.init().then(() => {
@@ -83,14 +96,12 @@ const Arena = () => {
             console.error(err);
             setLoader(false);
         });
-    }
+    };
 
     useEffect(() => {
         initializeStockfish();
 
         const unsubscribeEval = stockfishService.onEvaluation((message: EvalInfo) => {
-            console.log(message, "test")
-
             if (currentPlayerRef.current !== gameRef.current.turn()) {
                 const currentGame = gameRef.current;
                 const bestMove = message.bestMove;
@@ -104,15 +115,7 @@ const Arena = () => {
 
                 if (move === null) return;
 
-                console.log("Stockfish played:", bestMove);
                 setGame(new Chess(currentGame.fen()));
-
-                // gameAnalyticsMutation.mutate({
-                //     pv: message.pv,
-                //     currentPlayer: currentPlayerRef.current,
-                //     opponentColor: currentPlayerRef.current === CHESS_PIECES_COLOR.WHITE ? CHESS_PIECES_COLOR.BLACK : CHESS_PIECES_COLOR.WHITE,
-                //     currentGame: gameRef.current.fen(),
-                // });
             }
         });
 
@@ -138,7 +141,7 @@ const Arena = () => {
                         <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700/50 flex items-center justify-center text-xs text-zinc-400">?</div>
                         <div>
                             <p className="text-sm font-medium text-zinc-200 leading-none">Anonymous</p>
-                            <p className="text-[11px] text-zinc-500 mt-0.5">{currentPlayerRef?.current || "-"}</p>
+                            <p className="text-[11px] text-zinc-500 mt-0.5">{CHESS_PIECES_COLOR.WHITE}</p>
                         </div>
                     </div>
                 </div>
@@ -148,7 +151,7 @@ const Arena = () => {
                         <History size={12} className="text-zinc-600" />
                         <p className="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">Moves</p>
                     </div>
-                    {game.history().length === 0 ? (
+                    {moves && moves.length === 0 ? (
                         <p className="text-xs text-zinc-700 italic">No moves yet</p>
                     ) : (
                         <div className="space-y-0.5 text-xs font-mono">
@@ -159,19 +162,15 @@ const Arena = () => {
                                     {game.history()[i * 2 + 1] && <span className="text-zinc-500">{game.history()[i * 2 + 1]}</span>}
                                 </div>
                             ))}
+                            {moves.map((move, i) => (
+                                <div key={i} className="flex gap-2">
+                                    <span className="text-zinc-600 w-5">{i + 1}.</span>
+                                    <span className="text-zinc-300">{move.from}</span>
+                                    <span className="text-zinc-500">{move.to}</span>
+                                </div>
+                            ))}
                         </div>
                     )}
-                </div>
-
-                <div className="p-4 border-t border-zinc-800/40 space-y-2">
-                    <button className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-zinc-400 border border-zinc-700/40 bg-zinc-800/30 hover:bg-zinc-700/30 hover:text-zinc-200 transition-colors">
-                        <Handshake size={13} />
-                        Offer Draw
-                    </button>
-                    <button className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-red-400/80 border border-red-500/15 bg-red-500/5 hover:bg-red-500/10 hover:text-red-400 transition-colors">
-                        <Flag size={13} />
-                        Resign
-                    </button>
                 </div>
 
                 <div className="p-4 border-t border-zinc-800/40">
@@ -182,7 +181,7 @@ const Arena = () => {
                         </div>
                         <div>
                             <p className="text-sm font-medium text-zinc-200 leading-none">You</p>
-                            <p className="text-[11px] text-zinc-500 mt-0.5">{currentPlayerRef?.current || "-"}</p>
+                            <p className="text-[11px] text-zinc-500 mt-0.5">{CHESS_PIECES_COLOR.WHITE}</p>
                         </div>
                     </div>
                 </div>
@@ -208,9 +207,9 @@ const Arena = () => {
                             </div>
                             <div className="text-center space-y-3">
                                 <h2 className="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-white from-emerald-200 to-blue-200">
-                                    Analysis 
+                                    Analysis
                                 </h2>
-                                <p className="text-xs font-medium text-zinc-400 tracking-[0.2em] uppercase">Trying to find matching previous games</p>
+                                <p className="text-xs font-medium text-zinc-400 tracking-[0.2em] uppercase">Trying to find similar previous games</p>
                             </div>
                             <div className="flex gap-1.5">
                                 <div className="w-1 h-1 rounded-full bg-gray-400/80 animate-[bounce_1s_infinite_-0.3s]" />
@@ -221,12 +220,20 @@ const Arena = () => {
                     </div>
                 )}
 
-                <div
-                    className={`transition-all duration-1000 ease-in-out shadow-2xl rounded-sm overflow-hidden border border-zinc-800/50 ${(!gameId) ? "opacity-20 scale-[0.98] blur-[4px] saturate-50" : "opacity-100 scale-100"}`}
-                    style={{ width: "500px", height: "500px", pointerEvents: gameId ? "auto" : "none" }}
-                >
-                    <ChessBoard options={{ position: game.fen(), onPieceDrop: onDrop }} />
+                <div className="flex gap-10" style={{ height: "500px" }}>
+                    <div
+                        className={`transition-all duration-1000 ease-in-out shadow-2xl rounded-sm overflow-hidden border border-zinc-800/50 ${(!gameId) ? "opacity-20 scale-[0.98] blur-[4px] saturate-50" : "opacity-100 scale-100"}`}
+                        style={{ width: "500px", height: "100%", pointerEvents: gameId ? "auto" : "none" }}
+                    >
+                        <ChessBoard options={{ position: game.fen(), onPieceDrop: onDrop }} />
+                    </div>
+
+                    <div className="" style={{ width: "500px", height: "100%" }}>
+                        <LLM messages={messages} setMessages={setMessages} mutation={chatMutation} messagesEndRef={messagesEndRef} scrollToBottom={scrollToBottom} />
+                    </div>
                 </div>
+
+
             </div>
         </div>
     );
