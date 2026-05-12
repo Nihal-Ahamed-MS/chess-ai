@@ -1,41 +1,9 @@
-Chess-llm is an experiment project to understand the usecase of RAG systems and pgvector.
+Chess-llm is an experiment project built in NextJs and Rust to understand the usecases of RAG system and pgvector at scale. It comprises multiple test scenario for vector index IVFFLAT, HNSW and streamingDiskANN. 
 
-## Overview
-
-A full-stack chess platform where players compete in real-time and receive AI coaching powered by vector similarity search and a large language model. After each game, the move sequence is embedded via Gemini and stored in PostgreSQL with pgvector. The system then finds positionally similar past games, determines whether you won or lost those games, and generates tailored feedback — reinforcing what worked or identifying recurring mistakes.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────┐
-│          Next.js Frontend           │
-│  React 19 · Tailwind · shadcn/ui    │
-│  react-chessboard · chess.js        │
-└────────────┬────────────────────────┘
-             │ REST + WebSocket
-     ┌───────┴────────┐
-     │                │
-     ▼                ▼
-┌─────────┐    ┌──────────────────────┐
-│  Next.js │    │  Rust Game Server    │
-│  API     │    │  Axum · shakmaty     │
-│  Routes  │    │  WebSocket · sqlx    │
-└────┬─────┘    └──────────┬───────────┘
-     │                     │
-     ▼                     ▼
-┌──────────┐        ┌────────────────┐
-│ MongoDB  │        │  PostgreSQL     │
-│  Users   │        │  + pgvector     │
-│  Auth    │        │  Games · Embed  │
-└──────────┘        └────────────────┘
-     │
-     ▼
-┌──────────────────┐
-│   Gemini API     │
-│  gemini-2-flash  │
-│  embedding-2     │
-└──────────────────┘
-```
+![System Design](SystemDesign.svg)
 
 ### Prerequisites
 
