@@ -27,10 +27,7 @@ const Navbar = () => {
                             <Link href="/arena" className="transition-colors hover:text-zinc-100">Arena</Link>
                         </li>
                         <li>
-                            <Link href="/vs-computer" className="transition-colors hover:text-zinc-100">Play Computer</Link>
-                        </li>
-                        <li>
-                            <Link href="/analysis" className="transition-colors hover:text-zinc-100">Analysis</Link>
+                            <Link href="/analytics" className="transition-colors hover:text-zinc-100">Analysis</Link>
                         </li>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>

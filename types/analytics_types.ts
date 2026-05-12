@@ -5,3 +5,12 @@ export interface GameAnalyticsResult {
     draws: number;
     total: number;
 }
+
+export interface GameAnalyticsResponse {
+    gameData?: {
+        fen: string;
+        moves: []
+    };
+    analysis?: string;
+    message?: string;
+}

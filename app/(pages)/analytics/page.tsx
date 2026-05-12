@@ -48,7 +48,7 @@ const Arena = () => {
             if (analyticsData?.gameData && Object.keys(analyticsData?.gameData).length) {
                 const updatedGame = new Chess(analyticsData?.gameData.fen);
                 setGame(updatedGame);
-                setMoves(analyticsData?.gameData?.moves)
+                setMoves(analyticsData?.gameData?.moves || [])
             }
             setMessages((prev) => [
                 ...prev,

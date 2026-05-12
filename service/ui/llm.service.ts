@@ -1,5 +1,5 @@
 import { MESSAGE_TYPE } from "@/lib/constants";
-import { GameAnalyticsResult } from "@/types/analytics_types";
+import { GameAnalyticsResult, GameAnalyticsResponse } from "@/types/analytics_types";
 import axios from "axios";
 
 export interface ChatMessage {
@@ -17,7 +17,7 @@ export const sendGameAnalytics = async ({ messages, pv, currentPlayer, currentGa
     return data.message;
 };
 
-export const getGameAnalytics = async ({ gameId, playerId }: { gameId: string, playerId: string }): Promise<string> => {
+export const getGameAnalytics = async ({ gameId, playerId }: { gameId: string, playerId: string }): Promise<GameAnalyticsResponse> => {
     const { data } = await axios.get("/api/v1/game-analytics", { params: { gameId, playerId } });
     return data;
 };
