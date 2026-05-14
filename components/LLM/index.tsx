@@ -72,20 +72,22 @@ const LLM = (props: any) => {
                                 <div
                                     className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
                                         msg.role === MESSAGE_TYPE.USER
-                                            ? 'border border-emerald-500/20 bg-emerald-500/10'
+                                            ? 'border border-mist-300/20 bg-mist-300/10'
                                             : 'border border-zinc-700 bg-zinc-800'
                                     }`}
                                 >
                                     {msg.role === MESSAGE_TYPE.USER ? (
-                                        <User className="h-4 w-4 text-emerald-400" />
+                                        <User className="h-4 w-4 text-mist-400" />
                                     ) : (
-                                        <Bot className="h-4 w-4 text-zinc-400" />
+                                        <div className="relative flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg border border-indigo-500/20 bg-indigo-500/10 transition-colors group-hover:bg-indigo-500/20">
+                                            <Image src="/logo.png" alt="Neural Logo" fill className="object-contain" />
+                                        </div>
                                     )}
                                 </div>
                                 <div
                                     className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
                                         msg.role === MESSAGE_TYPE.USER
-                                            ? 'rounded-br-md border border-emerald-500/20 bg-emerald-500/15 text-emerald-50'
+                                            ? 'rounded-br-md border border-mist-300/20 bg-mist-300/15 text-mist-50'
                                             : 'rounded-bl-md border border-zinc-700/50 bg-zinc-800/80 text-zinc-200'
                                     }`}
                                 >
@@ -128,13 +130,13 @@ const LLM = (props: any) => {
                         onKeyDown={handleKeyDown}
                         placeholder="Ask your chess coach..."
                         disabled={mutation.isPending}
-                        className="flex-1 rounded-xl border-zinc-700 bg-zinc-800 px-4 py-4 text-zinc-50 transition-all placeholder:text-zinc-500 focus:border-emerald-500 focus:ring-emerald-500"
+                        className="flex-1 rounded-xl border-zinc-700 bg-zinc-800 px-4 py-4 text-zinc-50 transition-all placeholder:text-zinc-500 focus:border-mist-300 focus:ring-mist-300"
                     />
                     <Button
                         onClick={handleSend}
                         disabled={!input.trim() || mutation.isPending}
                         size="icon"
-                        className="h-11 w-11 rounded-xl bg-gray-500 text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-400 disabled:opacity-40 disabled:shadow-none"
+                        className="h-11 w-11 rounded-xl bg-gray-500 text-white shadow-lg shadow-mist-300/20 transition-all hover:bg-mist-200 disabled:opacity-40 disabled:shadow-none"
                     >
                         {mutation.isPending ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
