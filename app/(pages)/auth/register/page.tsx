@@ -48,7 +48,7 @@ export default function RegisterPage() {
 
                 <div className="text-center">
                     <h2 className="text-3xl font-extrabold text-zinc-50 tracking-tight">
-                        Join Chess <span className="text-emerald-400">AI</span>
+                        Join Chess <span className="text-zinc-400">AI</span>
                     </h2>
                     <p className="mt-2 text-sm text-zinc-400">
                         Create your account to start playing.
@@ -64,7 +64,7 @@ export default function RegisterPage() {
                                 name="userName"
                                 type="text"
                                 required
-                                className="bg-zinc-800 py-3 px-4 text-zinc-50 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-emerald-500 border-0 transition-all"
+                                className="bg-zinc-800 py-3 px-4 text-zinc-50 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-500 border-0 transition-all selection:bg-zinc-400 selection:text-zinc-900"
                                 placeholder="Username"
                                 value={formData.userName}
                                 onChange={handleChange}
@@ -78,7 +78,7 @@ export default function RegisterPage() {
                                 type="email"
                                 autoComplete="email"
                                 required
-                                className="bg-zinc-800 py-3 px-4 text-zinc-50 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-emerald-500 border-0 transition-all"
+                                className="bg-zinc-800 py-3 px-4 text-zinc-50 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-500 border-0 transition-all selection:bg-zinc-400 selection:text-zinc-900"
                                 placeholder="Email address"
                                 value={formData.email}
                                 onChange={handleChange}
@@ -92,7 +92,7 @@ export default function RegisterPage() {
                                 type="password"
                                 autoComplete="new-password"
                                 required
-                                className="bg-zinc-800 py-3 px-4 text-zinc-50 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-emerald-500 border-0 transition-all"
+                                className="bg-zinc-800 py-3 px-4 text-zinc-50 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-500 border-0 transition-all selection:bg-zinc-400 selection:text-zinc-900"
                                 placeholder="Password"
                                 value={formData.password}
                                 onChange={handleChange}
@@ -114,7 +114,7 @@ export default function RegisterPage() {
                         <Button
                             type="submit"
                             disabled={mutation.isPending}
-                            className="group relative flex w-full justify-center rounded-md bg-emerald-500 px-3 py-6 text-sm font-semibold text-white hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 transition-all shadow-lg"
+                            className="group relative flex w-full justify-center rounded-md bg-zinc-500 px-3 py-6 text-sm font-semibold text-white hover:bg-zinc-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-500 transition-all shadow-lg cursor-pointer"
                         >
                             {mutation.isPending ? (
                                 <Spinner data-icon="inline-start" />
@@ -126,7 +126,7 @@ export default function RegisterPage() {
 
                     <div className="text-center text-sm text-zinc-400">
                         Already have an account?{" "}
-                        <Link href="/auth/login" className="font-semibold text-emerald-400 hover:text-emerald-300 transition-colors">
+                        <Link href="/auth/login" className="font-semibold text-zinc-400 hover:text-zinc-300 transition-colors">
                             Log in
                         </Link>
                     </div>

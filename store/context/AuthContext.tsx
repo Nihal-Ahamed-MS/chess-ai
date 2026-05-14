@@ -11,7 +11,7 @@ const AuthContext = createContext<any>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState(null);
     const [isSessionValid, setIsSessionValid] = useState(false);
-    const { isLoading: authLoading } = useQuery({
+    const { isLoading: authLoading, refetch: refetchAuth } = useQuery({
         queryKey: ["authUser"],
         queryFn: async () => {
             try {
@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     return (
-        <AuthContext.Provider value={{ user, authLoading, setUser, isSessionValid }}>
+        <AuthContext.Provider value={{ user, authLoading, setUser, isSessionValid, refetchAuth }}>
             {children}
         </AuthContext.Provider>
     );

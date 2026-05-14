@@ -9,9 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { USER_SIGN_IN } from "@/service/ui/auth.service";
 import { useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/store/context/AuthContext";
 
 export default function LoginPage() {
     const router = useRouter();
+    const { refetchAuth } = useAuth();
     const searchParams = useSearchParams();
     const [formData, setFormData] = useState({ email: "", password: "" });
     const [loading, setLoading] = useState(false);
@@ -24,7 +26,6 @@ export default function LoginPage() {
             setSuccessMessage("Account created successfully! Please log in.");
         }
     }, [searchParams]);
-
 
     const mutation = useMutation({
         mutationFn: USER_SIGN_IN,
@@ -42,7 +43,7 @@ export default function LoginPage() {
         setSuccessMessage(null);
         setActiveTestUser(user);
         const encryptedPassword = encrypt("123");
-        mutation.mutate({ email, password: encryptedPassword }, { onSettled: () => setActiveTestUser(null) });
+        mutation.mutate({ email, password: encryptedPassword }, { onSettled: () => { setActiveTestUser(null); refetchAuth(); } });
     };
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -88,7 +89,7 @@ export default function LoginPage() {
                                 type="email"
                                 autoComplete="email"
                                 required
-                                className="bg-zinc-800 py-3 px-4 text-zinc-50 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-emerald-500 border-0 transition-all"
+                                className="bg-zinc-800 py-3 px-4 text-zinc-50 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-500 border-0 transition-all selection:bg-zinc-400 selection:text-zinc-900"
                                 placeholder="Email address"
                                 value={formData.email}
                                 onChange={handleChange}
@@ -102,7 +103,7 @@ export default function LoginPage() {
                                 type="password"
                                 autoComplete="current-password"
                                 required
-                                className="bg-zinc-800 py-3 px-4 text-zinc-50 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-emerald-500 border-0 transition-all"
+                                className="bg-zinc-800 py-3 px-4 text-zinc-50 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-500 border-0 transition-all selection:bg-zinc-400 selection:text-zinc-900"
                                 placeholder="Password"
                                 value={formData.password}
                                 onChange={handleChange}
@@ -112,7 +113,7 @@ export default function LoginPage() {
 
                     <div className="flex items-center justify-between">
                         <div className="text-sm">
-                            <Link href="/auth/forgot-password" className="font-medium text-emerald-400 hover:text-emerald-300 transition-colors">
+                            <Link href="/auth/forgot-password" className="font-medium text-zinc-400 hover:text-zinc-300 transition-colors">
                                 Forgot your password?
                             </Link>
                         </div>
@@ -129,10 +130,10 @@ export default function LoginPage() {
                     )}
 
                     {successMessage && (
-                        <div className="rounded-md bg-emerald-500/10 p-4 border border-emerald-500/20">
+                        <div className="rounded-md bg-zinc-500/10 p-4 border border-zinc-500/20">
                             <div className="flex">
                                 <div className="ml-3">
-                                    <h3 className="text-sm font-medium text-emerald-500">{successMessage}</h3>
+                                    <h3 className="text-sm font-medium text-zinc-500">{successMessage}</h3>
                                 </div>
                             </div>
                         </div>
@@ -142,7 +143,7 @@ export default function LoginPage() {
                         <Button
                             type="submit"
                             disabled={loading}
-                            className="group relative flex w-full justify-center rounded-md bg-emerald-500 px-3 py-6 text-sm font-semibold text-white hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 transition-all shadow-lg"
+                            className="group relative flex w-full justify-center rounded-md bg-zinc-500 px-3 py-6 text-sm font-semibold text-white hover:bg-zinc-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-500 transition-all shadow-lg cursor-pointer"
                         >
                             {loading ? (
                                 <Spinner data-icon="inline-start" />
@@ -157,7 +158,7 @@ export default function LoginPage() {
                             type="button"
                             disabled={mutation.isPending}
                             onClick={() => handleTestLogin(1, "test@gmail.com")}
-                            className="flex-1 rounded-md bg-zinc-700 px-3 py-6 text-sm font-semibold text-zinc-200 hover:bg-zinc-600 transition-all"
+                            className="flex-1 rounded-md bg-zinc-700 px-3 py-6 text-sm font-semibold text-zinc-200 hover:bg-zinc-600 transition-all cursor-pointer"
                         >
                             {activeTestUser === 1 ? <Spinner data-icon="inline-start" /> : "Test User 1"}
                         </Button>
@@ -165,7 +166,7 @@ export default function LoginPage() {
                             type="button"
                             disabled={mutation.isPending}
                             onClick={() => handleTestLogin(2, "test2@gmail.com")}
-                            className="flex-1 rounded-md bg-zinc-700 px-3 py-6 text-sm font-semibold text-zinc-200 hover:bg-zinc-600 transition-all"
+                            className="flex-1 rounded-md bg-zinc-700 px-3 py-6 text-sm font-semibold text-zinc-200 hover:bg-zinc-600 transition-all cursor-pointer"
                         >
                             {activeTestUser === 2 ? <Spinner data-icon="inline-start" /> : "Test User 2"}
                         </Button>
@@ -173,7 +174,7 @@ export default function LoginPage() {
 
                     <div className="text-center text-sm text-zinc-400">
                         Don't have an account?{" "}
-                        <Link href="/auth/register" className="font-semibold text-emerald-400 hover:text-emerald-300 transition-colors">
+                        <Link href="/auth/register" className="font-semibold text-zinc-400 hover:text-zinc-300 transition-colors">
                             Sign up
                         </Link>
                     </div>

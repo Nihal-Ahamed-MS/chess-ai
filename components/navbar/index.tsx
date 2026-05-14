@@ -5,7 +5,7 @@ import { BadgeCheckIcon, BellIcon, CreditCardIcon, LogOutIcon, Sparkles } from "
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import { useAuth } from "@/store/context/AuthContenxt";
+import { useAuth } from "@/store/context/AuthContext";
 import { logout } from "@/lib/helper";
 
 
@@ -27,7 +27,7 @@ const Navbar = () => {
                             <Link href="/arena" className="transition-colors hover:text-zinc-100">Arena</Link>
                         </li>
                         <li>
-                            <Link href="/analytics" className="transition-colors hover:text-zinc-100">Analysis</Link>
+                            <Link href="/vs-stockfish" className="transition-colors hover:text-zinc-100">Vs Stockfish</Link>
                         </li>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>

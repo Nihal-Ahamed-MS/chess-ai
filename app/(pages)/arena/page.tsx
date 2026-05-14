@@ -9,7 +9,7 @@ import { useMutation } from '@tanstack/react-query';
 import ChessBoard from '@/components/chessboard';
 import { COMMUNICATION_MSG } from '@/lib/constants';
 import useWebSocket from 'react-use-websocket';
-import { useAuth } from '@/store/context/AuthContenxt';
+import { useAuth } from '@/store/context/AuthContext';
 import { GameResult, ServerMessage } from '@/app/types/area_types';
 import { submitGameEmbedding } from '@/service/ui/llm.service';
 import { GameAnalyticsResult } from '@/types/analytics_types';
@@ -363,9 +363,9 @@ const Arena = () => {
                             position: game.fen(),
                             onPieceDrop: onDrop,
                             boardOrientation: playerColor,
-                            canDragPiece: ({ piece }: { piece: string }) => {
+                            canDragPiece: () => {
                                 const myColor = playerColorRef.current === 'white' ? 'w' : 'b';
-                                return piece[0] === myColor && gameRef.current.turn() === myColor;
+                                return game?._turn === myColor;
                             },
                         }}
                     />

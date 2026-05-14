@@ -2,7 +2,7 @@
 "use client";
 
 import { Chess } from "chess.js";
-import { useParams, useSearchParams } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { History } from "lucide-react";
 
@@ -13,12 +13,15 @@ import { CHESS_PIECES_COLOR, MESSAGE_TYPE } from "@/lib/constants";
 import LLM from "@/components/LLM";
 import { ChatMessage, sendChatMessage, getGameAnalytics } from "@/service/ui/llm.service";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/store/context/AuthContenxt";
+import { useAuth } from "@/store/context/AuthContext";
 
 const Arena = () => {
     const [loader, setLoader] = useState(true);
+    const [showWelcome, setShowWelcome] = useState(true);
     const params = useSearchParams();
     const gameId = params.get("gameId")
+    const pathname = usePathname();
+    const isVsStockfish = pathname === "/vs-stockfish";
     const { user } = useAuth();
 
     const currentPlayerRef = useRef(CHESS_PIECES_COLOR.WHITE);
@@ -134,6 +137,23 @@ const Arena = () => {
     return (
         <div className="w-screen h-screen flex bg-[#09090b] relative overflow-hidden">
 
+            {isVsStockfish && showWelcome && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="bg-zinc-900 border border-zinc-700/50 rounded-xl p-8 max-w-sm w-full mx-4 shadow-2xl flex flex-col gap-4">
+                        <h2 className="text-lg font-semibold text-zinc-100">Playing with Stockfish</h2>
+                        <p className="text-sm text-zinc-400 leading-relaxed">
+                            You are playing against Stockfish. You can use LLM support to analyse the position you are playing.
+                        </p>
+                        <button
+                            onClick={() => setShowWelcome(false)}
+                            className="mt-2 w-full py-2 rounded-lg bg-zinc-600 hover:bg-zinc-500 cursor-pointer text-sm font-medium text-white transition-colors"
+                        >
+                            Got it
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <aside className="relative z-10 flex flex-col w-56 h-full border-r border-zinc-800/50 bg-zinc-900/20 backdrop-blur-sm shrink-0">
                 <div className="p-4 border-b border-zinc-800/40">
                     <p className="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest mb-2">Opponent</p>
@@ -165,8 +185,8 @@ const Arena = () => {
                             {moves.map((move, i) => (
                                 <div key={i} className="flex gap-2">
                                     <span className="text-zinc-600 w-5">{i + 1}.</span>
-                                    <span className="text-zinc-300">{move.from}</span>
-                                    <span className="text-zinc-500">{move.to}</span>
+                                    <span className="text-zinc-300">{move?.from}</span>
+                                    <span className="text-zinc-500">{move?.to}</span>
                                 </div>
                             ))}
                         </div>
@@ -188,7 +208,7 @@ const Arena = () => {
             </aside>
 
             <div className="relative z-10 flex-1 flex items-center justify-center">
-                {(!gameId) && (
+                {(!gameId && !isVsStockfish) && (
                     <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/50 backdrop-blur-[6px] text-white">
                         <div className="absolute w-[200%] h-[200%] bg-gradient-to-tr from-emerald-500/10 via-transparent to-blue-500/10 animate-[spin_10s_linear_infinite] blur-[60px] pointer-events-none" />
                         <div className="flex flex-col items-center gap-6 relative z-10 p-8">
@@ -222,8 +242,8 @@ const Arena = () => {
 
                 <div className="flex gap-10" style={{ height: "500px" }}>
                     <div
-                        className={`transition-all duration-1000 ease-in-out shadow-2xl rounded-sm overflow-hidden border border-zinc-800/50 ${(!gameId) ? "opacity-20 scale-[0.98] blur-[4px] saturate-50" : "opacity-100 scale-100"}`}
-                        style={{ width: "500px", height: "100%", pointerEvents: gameId ? "auto" : "none" }}
+                        className={`transition-all duration-1000 ease-in-out shadow-2xl rounded-sm overflow-hidden border border-zinc-800/50 ${(!gameId && !isVsStockfish) ? "opacity-20 scale-[0.98] blur-[4px] saturate-50" : "opacity-100 scale-100"}`}
+                        style={{ width: "500px", height: "100%", pointerEvents: gameId || isVsStockfish ? "auto" : "none" }}
                     >
                         <ChessBoard options={{ position: game.fen(), onPieceDrop: onDrop }} />
                     </div>
@@ -232,8 +252,6 @@ const Arena = () => {
                         <LLM messages={messages} setMessages={setMessages} mutation={chatMutation} messagesEndRef={messagesEndRef} scrollToBottom={scrollToBottom} />
                     </div>
                 </div>
-
-
             </div>
         </div>
     );
