@@ -22,6 +22,18 @@ export const getGameAnalytics = async ({ gameId, playerId }: { gameId: string, p
     return data;
 };
 
+export const getGames = async (playerId: string) => {
+    const { data } = await axios.get("/api/v1/game", { params: { playerId } });
+    return data.games as {
+        id: string;
+        white: string;
+        black: string;
+        result: string;
+        fen: string;
+        moves: { from: string; to: string }[];
+    }[];
+};
+
 export const submitGameEmbedding = async (payload: {
     gameId: string | null;
     moves: string[];

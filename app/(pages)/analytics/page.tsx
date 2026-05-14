@@ -4,7 +4,7 @@
 import { Chess } from "chess.js";
 import { useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Flag, Handshake, History, Scale } from "lucide-react";
+import { Flag, History, Scale } from "lucide-react";
 
 import stockfishService, { EvalInfo } from "@/service/ui/stockfish.service";
 import ChessBoard from "@/components/chessboard";
@@ -253,13 +253,15 @@ const Arena = () => {
                     {isVsStockfish && (
                         <button
                             onClick={() => {
-                                setLiveJudge(true);
-                                gameAnalyticsMutation.mutate({
-                                    pv: lastEvalRef.current?.pv,
-                                    currentPlayer: currentPlayerRef.current,
-                                    opponentColor: currentPlayerRef.current === CHESS_PIECES_COLOR.WHITE ? CHESS_PIECES_COLOR.BLACK : CHESS_PIECES_COLOR.WHITE,
-                                    currentGame: gameRef.current.fen(),
-                                })
+                                setLiveJudge(!liveJudge);
+                                if (!liveJudge) {
+                                    gameAnalyticsMutation.mutate({
+                                        pv: lastEvalRef.current?.pv,
+                                        currentPlayer: currentPlayerRef.current,
+                                        opponentColor: currentPlayerRef.current === CHESS_PIECES_COLOR.WHITE ? CHESS_PIECES_COLOR.BLACK : CHESS_PIECES_COLOR.WHITE,
+                                        currentGame: gameRef.current.fen(),
+                                    })
+                                }
                             }}
                             disabled={gameAnalyticsMutation.isPending}
                             className="cursor-pointer flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-600/30 bg-zinc-700/20 px-3 py-2 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-700/40 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
@@ -271,14 +273,14 @@ const Arena = () => {
                     {gameOver ? (
                         <button
                             onClick={handleReset}
-                            className="flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-600/30 bg-zinc-700/20 px-3 py-2 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700/40 hover:text-zinc-100"
+                            className="cursor-pointer flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-600/30 bg-zinc-700/20 px-3 py-2 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700/40 hover:text-zinc-100"
                         >
                             Play Again
                         </button>
                     ) : (
                         <button
                             onClick={handleResign}
-                            className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/15 bg-red-500/5 px-3 py-2 text-xs font-medium text-red-400/80 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                            className="cursor-pointer flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/15 bg-red-500/5 px-3 py-2 text-xs font-medium text-red-400/80 transition-colors hover:bg-red-500/10 hover:text-red-400"
                         >
                             <Flag size={13} />
                             Resign

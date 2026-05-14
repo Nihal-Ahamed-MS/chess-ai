@@ -29,6 +29,9 @@ const Navbar = () => {
                         <li>
                             <Link href="/vs-stockfish" className="transition-colors hover:text-zinc-100">Vs Stockfish</Link>
                         </li>
+                        <li>
+                            <Link href="/history" className="transition-colors hover:text-zinc-100">History</Link>
+                        </li>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="rounded-full">
