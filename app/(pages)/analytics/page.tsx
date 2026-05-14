@@ -4,14 +4,14 @@
 import { Chess } from "chess.js";
 import { useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { History } from "lucide-react";
+import { Flag, Handshake, History, Scale } from "lucide-react";
 
 import stockfishService, { EvalInfo } from "@/service/ui/stockfish.service";
 import ChessBoard from "@/components/chessboard";
 import { Spinner } from "@/components/ui/spinner";
 import { CHESS_PIECES_COLOR, MESSAGE_TYPE } from "@/lib/constants";
 import LLM from "@/components/LLM";
-import { ChatMessage, sendChatMessage, getGameAnalytics } from "@/service/ui/llm.service";
+import { ChatMessage, sendChatMessage, getGameAnalytics, sendGameAnalytics } from "@/service/ui/llm.service";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/store/context/AuthContext";
 
@@ -24,7 +24,12 @@ const Arena = () => {
     const isVsStockfish = pathname === "/vs-stockfish";
     const { user } = useAuth();
 
+    const [liveJudge, setLiveJudge] = useState(false)
+    const liveJudgeRef = useRef(false);
+    const [gameOver, setGameOver] = useState(false);
+    const gameOverRef = useRef(false);
     const currentPlayerRef = useRef(CHESS_PIECES_COLOR.WHITE);
+    const lastEvalRef = useRef<EvalInfo | null>(null);
     const [game, setGame] = useState(new Chess());
     const [moves, setMoves] = useState([])
     const gameRef = useRef(game);
@@ -72,7 +77,19 @@ const Arena = () => {
         },
     });
 
+    const gameAnalyticsMutation = useMutation({
+        mutationFn: (payload: any) => sendGameAnalytics(payload),
+        onSuccess: (response) => {
+            setMessages((prev: ChatMessage[]) => [
+                ...prev,
+                { role: MESSAGE_TYPE.MODEL, content: response },
+            ]);
+            scrollToBottom();
+        },
+    });
+
     const onDrop = useCallback(({ sourceSquare, targetSquare }: any) => {
+        if (gameOverRef.current) return false;
         const currentGame = gameRef.current;
 
         const move = currentGame.move({
@@ -101,10 +118,36 @@ const Arena = () => {
         });
     };
 
+    const handleResign = () => {
+        if (gameOverRef.current) return;
+        gameOverRef.current = true;
+        setGameOver(true);
+        stockfishService.destroy();
+        setMessages((prev) => [
+            ...prev,
+            { role: MESSAGE_TYPE.MODEL, content: "You resigned. Better luck next time!" },
+        ]);
+        scrollToBottom();
+    };
+
+    const handleReset = () => {
+        const newGame = new Chess();
+        gameRef.current = newGame;
+        setGame(newGame);
+        setMoves([]);
+        setMessages([]);
+        lastEvalRef.current = null;
+        gameOverRef.current = false;
+        setGameOver(false);
+        initializeStockfish();
+    };
+
     useEffect(() => {
         initializeStockfish();
 
         const unsubscribeEval = stockfishService.onEvaluation((message: EvalInfo) => {
+            if (gameOverRef.current) return;
+            lastEvalRef.current = message;
             if (currentPlayerRef.current !== gameRef.current.turn()) {
                 const currentGame = gameRef.current;
                 const bestMove = message.bestMove;
@@ -119,6 +162,15 @@ const Arena = () => {
                 if (move === null) return;
 
                 setGame(new Chess(currentGame.fen()));
+
+                if (liveJudgeRef.current) {
+                    gameAnalyticsMutation.mutate({
+                        pv: message.pv,
+                        currentPlayer: currentPlayerRef.current,
+                        opponentColor: currentPlayerRef.current === CHESS_PIECES_COLOR.WHITE ? CHESS_PIECES_COLOR.BLACK : CHESS_PIECES_COLOR.WHITE,
+                        currentGame: gameRef.current.fen(),
+                    });
+                }
             }
         });
 
@@ -127,6 +179,10 @@ const Arena = () => {
             stockfishService.destroy();
         };
     }, []);
+
+    useEffect(() => {
+        liveJudgeRef.current = liveJudge;
+    }, [liveJudge]);
 
     if (loader) return (
         <div className="w-screen h-screen flex justify-center items-center">
@@ -190,6 +246,43 @@ const Arena = () => {
                                 </div>
                             ))}
                         </div>
+                    )}
+                </div>
+
+                <div className="space-y-2 border-t border-zinc-800/40 p-4">
+                    {isVsStockfish && (
+                        <button
+                            onClick={() => {
+                                setLiveJudge(true);
+                                gameAnalyticsMutation.mutate({
+                                    pv: lastEvalRef.current?.pv,
+                                    currentPlayer: currentPlayerRef.current,
+                                    opponentColor: currentPlayerRef.current === CHESS_PIECES_COLOR.WHITE ? CHESS_PIECES_COLOR.BLACK : CHESS_PIECES_COLOR.WHITE,
+                                    currentGame: gameRef.current.fen(),
+                                })
+                            }}
+                            disabled={gameAnalyticsMutation.isPending}
+                            className="cursor-pointer flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-600/30 bg-zinc-700/20 px-3 py-2 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-700/40 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                            <Scale size={13} />
+                            {liveJudge ? "Disable" : "Enable"} Live Judge
+                        </button>
+                    )}
+                    {gameOver ? (
+                        <button
+                            onClick={handleReset}
+                            className="flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-600/30 bg-zinc-700/20 px-3 py-2 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700/40 hover:text-zinc-100"
+                        >
+                            Play Again
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleResign}
+                            className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/15 bg-red-500/5 px-3 py-2 text-xs font-medium text-red-400/80 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                        >
+                            <Flag size={13} />
+                            Resign
+                        </button>
                     )}
                 </div>
 
