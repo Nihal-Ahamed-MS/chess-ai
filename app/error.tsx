@@ -9,7 +9,6 @@ interface ErrorProps {
 
 export default function Error({ error, reset }: ErrorProps) {
     useEffect(() => {
-        // Log to your error tracking service (Sentry, etc.)
         console.error(error)
     }, [error])
 
