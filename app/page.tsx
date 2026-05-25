@@ -31,7 +31,7 @@ export default function Home() {
                                 Start Playing
                             </Button>
                         </Link>
-                        <Link href="/vs-computer" className="w-full sm:w-auto">
+                        <Link href="/arena" className="w-full sm:w-auto">
                             <Button size="lg" variant="outline" className="h-12 w-full sm:w-auto rounded-full border-white/10 bg-white/5 px-8 text-sm font-medium text-zinc-300 transition-all hover:bg-white/10 hover:text-white backdrop-blur-sm">
                                 Explore AI Features
                             </Button>

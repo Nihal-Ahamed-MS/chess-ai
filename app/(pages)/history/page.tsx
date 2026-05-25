@@ -20,10 +20,7 @@ const History = () => {
     });
 
     const getResult = (game: { white: string; black: string; result: string }) => {
-        if (game.result === 'draw') return { label: 'Draw', color: 'text-zinc-400' };
-        const iWon =
-            (game.white === user?._id && game.result === 'white') ||
-            (game.black === user?._id && game.result === 'black');
+        const iWon = (game.result === user?._id)
         return iWon
             ? { label: 'Win', color: 'text-emerald-400' }
             : { label: 'Loss', color: 'text-red-400' };
@@ -52,7 +49,7 @@ const History = () => {
                             </h1>
                             <p className="mt-0.5 text-xs text-zinc-600">All your past games</p>
                         </div>
-                        <div style={{ height: "calc(100% - 46px)", display: "flex", flexDirection: "column", }}>
+                        <div style={{ overflow: "scroll", height: "calc(100% - 46px)", display: "flex", flexDirection: "column", gap: "12px" }}>
                             {games.map((game) => {
                                 const result = getResult(game);
                                 return (

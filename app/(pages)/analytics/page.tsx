@@ -8,16 +8,17 @@ import { Flag, History, Scale } from "lucide-react";
 
 import stockfishService, { EvalInfo } from "@/service/ui/stockfish.service";
 import ChessBoard from "@/components/chessboard";
-import { Spinner } from "@/components/ui/spinner";
 import { CHESS_PIECES_COLOR, MESSAGE_TYPE } from "@/lib/constants";
 import LLM from "@/components/LLM";
 import { ChatMessage, sendChatMessage, getGameAnalytics, sendGameAnalytics } from "@/service/ui/llm.service";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/store/context/AuthContext";
+import { Spinner } from "@/components/ui/spinner";
 
 const Arena = () => {
     const [loader, setLoader] = useState(true);
     const [showWelcome, setShowWelcome] = useState(true);
+    const [loadingStep, setLoadingStep] = useState(0);
     const params = useSearchParams();
     const gameId = params.get("gameId")
     const pathname = usePathname();
@@ -43,7 +44,7 @@ const Arena = () => {
         }, 100);
     }, []);
 
-    const { data: analyticsData } = useQuery({
+    const { data: analyticsData, isLoading } = useQuery({
         queryKey: ["game-analytics", gameId, user?._id],
         queryFn: () => getGameAnalytics({ gameId: gameId!, playerId: user!._id }),
         enabled: !!gameId && !!user?._id,
@@ -184,9 +185,51 @@ const Arena = () => {
         liveJudgeRef.current = liveJudge;
     }, [liveJudge]);
 
-    if (loader) return (
+    useEffect(() => {
+        if (!isLoading) return;
+        const t0 = setTimeout(() => setLoadingStep(0), 0);
+        const t1 = setTimeout(() => setLoadingStep(1), 1000);
+        const t2 = setTimeout(() => setLoadingStep(2), 2500);
+        return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); };
+    }, [isLoading]);
+
+    if (loader) {
         <div className="w-screen h-screen flex justify-center items-center">
             <Spinner />
+        </div>
+    }
+
+    if ((loader || isLoading) && gameId) return (
+        <div className="w-screen h-screen flex flex-col justify-center items-center bg-[#09090b] gap-8">
+            <p className="text-xs font-semibold text-zinc-600 uppercase tracking-widest">analysis</p>
+            <div className="flex flex-col gap-5 w-64">
+                {[
+                    "Fetching your game details",
+                    "Find similar outcomes",
+                    "Analyze the current game moves",
+                ].map((label, step) => {
+                    const isDone = loadingStep > step;
+                    const isActive = loadingStep === step;
+                    return (
+                        <div key={step} className={`flex items-center gap-3 transition-all duration-500 ${isActive ? "opacity-100" : isDone ? "opacity-50" : "opacity-20"}`}>
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border transition-colors duration-500 ${isDone ? "border-emerald-500/50 bg-emerald-500/10" : isActive ? "border-zinc-500" : "border-zinc-800"}`}>
+                                {isDone ? (
+                                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                        <path d="M2 5l2.5 2.5L8 3" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                ) : isActive ? (
+                                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-300 animate-pulse" />
+                                ) : (
+                                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
+                                )}
+                            </div>
+                            <span className={`text-sm transition-colors duration-500 ${isActive ? "text-zinc-100" : isDone ? "text-emerald-400/70" : "text-zinc-600"}`}>
+                                {label}
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 
@@ -270,21 +313,24 @@ const Arena = () => {
                             {liveJudge ? "Disable" : "Enable"} Live Judge
                         </button>
                     )}
-                    {gameOver ? (
-                        <button
-                            onClick={handleReset}
-                            className="cursor-pointer flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-600/30 bg-zinc-700/20 px-3 py-2 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700/40 hover:text-zinc-100"
-                        >
-                            Play Again
-                        </button>
-                    ) : (
-                        <button
-                            onClick={handleResign}
-                            className="cursor-pointer flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/15 bg-red-500/5 px-3 py-2 text-xs font-medium text-red-400/80 transition-colors hover:bg-red-500/10 hover:text-red-400"
-                        >
-                            <Flag size={13} />
-                            Resign
-                        </button>
+
+                    {!gameId && (
+                        gameOver ? (
+                            <button
+                                onClick={handleReset}
+                                className="cursor-pointer flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-600/30 bg-zinc-700/20 px-3 py-2 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700/40 hover:text-zinc-100"
+                            >
+                                Play Again
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleResign}
+                                className="cursor-pointer flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/15 bg-red-500/5 px-3 py-2 text-xs font-medium text-red-400/80 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                            >
+                                <Flag size={13} />
+                                Resign
+                            </button>
+                        )
                     )}
                 </div>
 

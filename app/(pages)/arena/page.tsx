@@ -318,7 +318,7 @@ const Arena = () => {
                                 <>
                                     {analyticsData && analyticsData.total > 0 && (
                                         <div className="mt-2 flex gap-4 text-xs">
-                                            {`You have ${playerColor === gameResult.winner ? "Won" : "Lost"} ${analyticsData.total} similar games, Click analyze to fix your mistakes with LLM`}
+                                            {`You have ${playerColor === gameResult.winner ? "Won" : "Lost"} ${analyticsData.total} similar games, Click analyze to analyze the game with help of LLM`}
                                         </div>
                                     )}
                                     <div className="mt-2 flex gap-2">

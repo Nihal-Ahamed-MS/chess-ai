@@ -23,19 +23,18 @@ export async function GET(req: NextRequest) {
             'SELECT white, black, result, fen, moves FROM games WHERE id = $1',
             [gameId],
         );
+
         const currentGame = gameRows[0];
         if (!currentGame) {
             return NextResponse.json({ error: 'Game not found' }, { status: 404 });
         }
 
         const playerColor = currentGame.white === playerId ? 'white' : 'black';
-        const playerWon =
-            (playerColor === 'white' && currentGame.result === 'white') ||
-            (playerColor === 'black' && currentGame.result === 'black');
+        const playerWon = currentGame.result === playerId
         const outcome = playerWon ? 'win' : 'loss';
 
-        const winFilter = `(g.white = $2 AND g.result = 'white') OR (g.black = $2 AND g.result = 'black')`;
-        const lossFilter = `(g.white = $2 AND g.result = 'black') OR (g.black = $2 AND g.result = 'white')`;
+        const winFilter = `g.result = $2`;
+        const lossFilter = `(g.white = $2 OR g.black = $2) AND g.result != $2 AND g.result != 'draw'`;
         const outcomeFilter = playerWon ? winFilter : lossFilter;
 
         const { rows } = await db.query<{ moves: { from: string; to: string }[] | null }>(
